@@ -1,0 +1,47 @@
+{
+    "name": "node-finance",
+    "description": "Financial functions for NodeJS",
+    "version": "0.0.1",
+    "author": "Rob Hicks <rob@hixfamily.org>",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/robhicks/node-finance"
+    },
+    "main": "./finance.js",
+    "scripts": {
+        "start": "node test"
+    },
+    "dependencies": {
+        "q": "~0.9.7",
+        "lodash": "~2.2.1",
+        "moment": "~2.4.0"
+    },
+    "devDependencies": {
+        "grunt": "~0.4.1",
+        "grunt-jasmine-node": "~0.1.0",
+        "grunt-contrib-watch": "~0.5.3"
+    },
+    "keywords": [
+        "finance",
+        "money",
+        "amortization",
+        "calculate accrued interest",
+        "calculate amount financed",
+        "calculate months financed",
+        "calculate interest",
+        "calculate payments",
+        "create amortiation table"
+    ],
+    "licenses": [
+        {
+            "type": "MIT"
+        },
+        {
+            "type": "GPL2"
+        }
+    ],
+    "bugs": {
+        "url": "https://github.com/robhicks/node-finance/issues"
+    },
+    "license": "MIT"
+}
