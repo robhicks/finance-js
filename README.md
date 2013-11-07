@@ -1,82 +1,96 @@
-FinanceJs
+node-finance
 =========
 
-FinanceJs is a Node module that provides basic finance methods and is based upon the work of:
-
-- Author: [Trent Richardson](http://trentrichardson.com)
-- Twitter: [@practicalweb](http://twitter.com/practicalweb)
-
-Node Module Version 0.0.1
-
-This module does not include the formatting functions from Trent's library. I didn't port them
-because most templating libraries come with their own formatting functionality.
+FinanceJs is a Node module that provides basic finance methods
 
 FUNCTIONS
 =========
 
-Calculate the Financed Payment Amount
--------------------------------------
+PVofLumpSum
+-----------
+Calculates the present value of a lump sum received in the future. Arguments include:
+* rate (required) - the interest rate per period
+* NPER (required) - total number of periods
+* FV (optional) - the future value or lump sum to be received
 
-Three parameters: amount, months, interest rate (percent)
+PV
+--
+Calculates the present value of an investment resulting from a series of regular payments. Arguments include:
+* rate (required) - the interest rate per period
+* NPER (required) - total number of payment periods
+* PMT (required)  the regular payment made each period
+* type (optional) - when payments are made: 0 * at the end of each period  1 * at the start of each period (including a payment at the start of the term)
 
-```javascript
-finance.calculatePayment(25000, 60, 5.25);
-```
+PVofPerpetuity
+--------------
+Calculates the present value of an investment with an unlimited number of regular payments. Arguments include:
+* rate (required) - the interest rate per period
+* NPER (required) - total number of payment periods
+* PMT (required)  the regular payment made each period
 
-Calculate the Financed Amount
------------------------------
+CUMIPMT
+-------
+Calculate the total interest paid on a loan in specified periodic payments. Arguments include:
+* rate (required) - interest rate specified as a percentage, e.g., 10.5
+* periods (required) - the total number of payment periods in the term
+* pv (required) - the initial sum borrowed
+* start (optional) - the first period to include. Periods are numbered beginning with 1
+* end (optional) - the last period to include
+* type (optional) - when payments are made:
+    - 0 - at the end of each period
+    - 1 - at the start of each period (including a payment at the start of the term)
+* callback (optional) - callback for asynchronous processing using Node's CommonJS format
 
-Three parameters: months, interest rate (percent), payment
+FV
+--
+Calculates future value of an investment based on equal periodic payments. Arugments include:
+* rate (required) - the periodic interest rate
+* NPER (required) - the number of periods
+* PMT (required) - the equal periodic payments
+* type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
 
-```javascript
-finance.calculateAmount(60, 5.25, 474.65);
-```
+NPER
+----
+Caculates the number of periods for an investment based on periodic, constant payments
+and a constant interest rate. Arguments include:
+* rate (required) - the periodic interest rate
+* PMT (required) - the constant payment paid in each period
+* FV (required) - the future value of the last period
+* type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
 
-Calculate the Months Financed
------------------------------
+PMT
+---
+Calculates the payment for a loan with the following parameters.
+* PV is loan amount
+* NPER is the number of periods
+* rate is the rate per period
 
-Three parameters: amount, interest rate (percent), payment
+genAmortizationSchedule
+-----------------------
+This function generates an amortization schedule. The schedule is returned as a Javascript object.
 
-```javascript
-finance.calculateMonths(25000, 5.25, 474.65);
-```
+The function accepts the following arguments:
+* amount (required): the starting principal amount of the loan
+* months (required): the number of whole months over which the loan extends
+* rate (required): the annual interest rate of the loan expressed as a percentage, e.g., 10.5
+* firstPaymentDate (optional): the date the first payment will be made
+* frequency (optional): the payment frequency, which can be any of the following:
+    semimonthly - twice a month
+    monthly - once each month
+    bimonthly - every two months
+    quarterly - every quarter
+    semiannually - ever 6 months
+    annually - ever 12 months
+    none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
+* balloonDate (optional): the date a balloon payment will be made. This date will be forced to earliest
+corresponding payment date. This date will be ignored if it is greater than the term (months) of the
+loan.
 
-Calculate the Financed Interest Rate
-------------------------------------
-
-Three parameters: amount, months, payment
-
-```javascript
-finance.calculateInterest(25000, 60, 474.65);
-```
-
-Calculate the Accrued Interest
-------------------------------
-
-If your money is in a bank account accruing interest, how much does it earn over x months?
-Three parameters: principle amount, months, interest rate (percent)
-
-```javascript
-finance.calculateAccruedInterest(25000, 60, 5.25);
-```
-
-Create Amortization Schedule
-----------------------------
-
-Create an amortization schedule. The result will be a JSON document that includes an array, the
-length of which is the number of months. Each entry is an object.
-Four parameters: principle amount, months, interest rate (percent), start date (optional Date object)
-
-```javascript
-finance.calculateAmortization(25000, 60, 5.25, new Date(2011,11,20) );
-```
-
-Copyright 2012 Trent Richardson
-
-You may use this project under MIT or GPL licenses.
-
-http://trentrichardson.com/Impromptu/GPL-LICENSE.txt
-
-http://trentrichardson.com/Impromptu/MIT-LICENSE.txt
-
-
+The return object contains an array, with each array element containing the following fields:
+* paymentNumber - the number for a payment
+* principle: the principal balance remaining at the end of the period
+* accumulatedInterest: the interest accumulate from all previous periods through this period
+* payment: the periodic payment the borrower is required to pay
+* paymentToPrinciple: the amount of the payment allocated to paying down the principal
+* paymentToInterest: the amount of the payment allocated to paying interest
+* date: the date of the payment for the period
