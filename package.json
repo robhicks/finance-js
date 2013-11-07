@@ -1,7 +1,7 @@
 {
     "name": "node-finance",
     "description": "Financial functions for NodeJS",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "Rob Hicks <rob@hixfamily.org>",
     "repository": {
         "type": "git",
