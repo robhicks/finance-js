@@ -404,33 +404,33 @@ calculator.PMT = function(PV, NPER, rate, callback){
     }
 };
 /*
-    This function generates an amortization schedule. The schedule is returned as a Javascript object.
+This function generates an amortization schedule. The schedule is returned as a Javascript object.
 
-    The function accepts the following arguments:
-        amount (required): the starting principal amount of the loan
-        months (required): the number of whole months over which the loan extends
-        rate (required): the annual interest rate of the loan expressed as a percentage, e.g., 10.5
-        firstPaymentDate (optional): the date the first payment will be made
-        frequency (optional): the payment frequency, which can be any of the following:
-            semimonthly - twice a month
-            monthly - once each month
-            bimonthly - every two months
-            quarterly - every quarter
-            semiannually - ever 6 months
-            annually - ever 12 months
-            none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
-        balloonDate (optional): the date a balloon payment will be made. This date will be forced to earliest
-            corresponding payment date. This date will be ignored if it is greater than the term (months) of the
-            loan.
+The function accepts the following arguments:
+* amount (required): the starting principal amount of the loan
+* months (required): the number of whole months over which the loan extends
+* rate (required): the annual interest rate of the loan expressed as a percentage, e.g., 10.5
+* firstPaymentDate (optional): the date the first payment will be made
+* frequency (optional): the payment frequency, which can be any of the following:
+    - semimonthly - twice a month
+    - monthly - once each month
+    - bimonthly - every two months
+    - quarterly - every quarter
+    - semiannually - ever 6 months
+    - annually - ever 12 months
+    - none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
+* balloonDate (optional): the date a balloon payment will be made. This date will be forced to earliest
+corresponding payment date. This date will be ignored if it is greater than the term (months) of the
+loan.
 
-    The return object contains an array, with each array element containing the following fields:
-        paymentNumber - the number for a payment
-        principle: the principal balance remaining at the end of the period
-        accumulatedInterest: the interest accumulate from all previous periods through this period
-        payment: the periodic payment the borrower is required to pay
-        paymentToPrinciple: the amount of the payment allocated to paying down the principal
-        paymentToInterest: the amount of the payment allocated to paying interest
-        date: the date of the payment for the period
+The return object contains an array, with each array element containing the following fields:
+ * paymentNumber - the number for a payment
+ * principle: the principal balance remaining at the end of the period
+ * accumulatedInterest: the interest accumulate from all previous periods through this period
+ * payment: the periodic payment the borrower is required to pay
+ * paymentToPrinciple: the amount of the payment allocated to paying down the principal
+ * paymentToInterest: the amount of the payment allocated to paying interest
+ * date: the date of the payment for the period
 
  */
 calculator.genAmortizationSchedule = function (amount, months, rate, firstPaymentDate, frequency, balloonDate, cb) {
@@ -628,6 +628,65 @@ calculator.firstPaymentDate = function(dateFunded, firstPaymentDay, cb){
         return null;
     }
 };
+
+/*
+payments
+--------
+Calculates the number of payments for a loan. This is different than NPER.
+NPER calculates the number of periods used in an annuity or loan from
+a financial perspective. This function looks at how frequently a customer
+chooses to make payments. This function has the following arguments:
+    * NPER (required) - the number of periods used in calculating interest for a loan
+    * frequency (required): the payment frequency, which can be any of the following:
+         - semimonthly - twice a month
+         - monthly - once each month
+         - bimonthly - every two months
+         - quarterly - every quarter
+         - semiannually - ever 6 months
+         - annually - ever 12 months
+         - none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
+    * callback (optional) - function of CommonJs/NodeJs return, e.g., function(err, result)
+
+ */
+calculator.payments = function(NPER, frequency, callback){
+    var deferred = Q.defer();
+    var payments;
+    try{
+
+        //assure we can pass promise to callback
+        if(typeof NPER === 'function') callback = NPER;
+        if(typeof frequency === 'function') frequency = NPER;
+
+        //validate arguments
+        if(!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
+
+        if(!frequency || frequency === 'monthly'){
+            payments = NPER;
+        } else if(frequency.toLowerCase() === 'semimonthly'){
+            (payments = NPER * 2).toInteger();
+        } else if(frequency.toLowerCase() === 'bimonthly'){
+            payments = (NPER / 2).toInteger();
+        } else if(frequency.toLowerCase() === 'quarterly'){
+            payments = (NPER / 4).toInteger();
+        } else if(frequency.toLowerCase() === 'semiannually'){
+            payments = (NPER / 6).toInteger();
+        } else if(frequency.toLowerCase() === 'annually'){
+            payments = (NPER / 12).toInteger();
+        } else if(frequency.toLowerCase() === 'none' || frequency.toLowerCase() === 'one'){
+            payments = 1;
+        }
+
+        deferred.resolve(payments);
+        if(callback) return deferred.promise.nodeify(callback);
+        return payments;
+
+    } catch (err){
+        deferred.reject(err);
+        if(callback) return deferred.promise.nodeify(callback);
+        return err;
+    }
+};
+
 
 //rounds numbers to two decimal places
 Number.prototype.round = function(decimalPlaces){

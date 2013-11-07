@@ -94,3 +94,19 @@ The return object contains an array, with each array element containing the foll
 * paymentToPrinciple: the amount of the payment allocated to paying down the principal
 * paymentToInterest: the amount of the payment allocated to paying interest
 * date: the date of the payment for the period
+
+payments
+--------
+Calculates the number of payments for a loan. This is different than NPER.
+NPER calculates the number of periods used in an annuity or loan from
+a financial perspective. This function looks at how frequently a customer
+chooses to make payments. This function has the following arguments:
+    * NPER (required) - the number of periods used in calculating interest for a loan
+    * frequency (optional): the payment frequency, which can be any of the following:
+         - semimonthly - twice a month
+         - monthly - once each month
+         - bimonthly - every two months
+         - quarterly - every quarter
+         - semiannually - ever 6 months
+         - annually - ever 12 months
+         - none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
