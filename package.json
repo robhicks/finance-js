@@ -25,12 +25,16 @@
         "finance",
         "money",
         "amortization",
-        "calculate accrued interest",
-        "calculate amount financed",
-        "calculate months financed",
-        "calculate interest",
-        "calculate payments",
-        "create amortiation table"
+        "accrued interest",
+        "amount financed",
+        "months financed",
+        "interest",
+        "present value",
+        "future value",
+        "balloon payment",
+        "balloon amount",
+        "payments",
+        "amortiation table"
     ],
     "licenses": [
         {

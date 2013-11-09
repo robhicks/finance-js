@@ -30,7 +30,7 @@ PV
  * NPER (required) - total number of payment periods
  * PMT (required)  the regular payment made each period
 
-CUMIPMT
+CumulativeInterestPaid
 -------
 Calculate the total interest paid on a loan in specified periodic payments. Arguments include:
 * rate (required) - interest rate specified as a percentage, e.g., 10.5

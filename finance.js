@@ -159,18 +159,18 @@ calculator.PVofPerpetuity = function (rate, PMT, callback) {
 };
 
 /*
+CumulativeInterestPaid
+----------------------
  Calculate the total interest paid on a loan in specified periodic payments. Arguments include:
- rate (required) - interest rate specified as a percentage, e.g., 10.5
- periods (required) - the total number of payment periods in the term
- pv (required) - the initial sum borrowed
- start (optional) - the first period to include. Periods are numbered beginning with 1
- end (optional) - the last period to include
- type (optional) - when payments are made:
- 0 - at the end of each period
- 1 - at the start of each period (including a payment at the start of the term)
- callback (optional) - callback for asynchronous processing using Node's CommonJS format
+ * rate (required) - interest rate specified as a percentage, e.g., 10.5
+ * periods (required) - the total number of payment periods in the term
+ * PV (required) - the initial sum borrowed
+ * start (optional) - the first period to include. Periods are numbered beginning with 1
+ * end (optional) - the last period to include
+ * type (optional) - whether payments are made at the end of each period (0) or at the start of each period (1)
+ * callback (optional) - callback for asynchronous processing using Node's CommonJS format
  */
-calculator.CUMIPMT = function (rate, periods, PV, start, end, type, callback) {
+calculator.CumulativeInterestPaid = function (rate, periods, PV, start, end, type, callback) {
     var deferred = Q.defer();
     try {
         //assure we can pass promise to callback
@@ -192,7 +192,6 @@ calculator.CUMIPMT = function (rate, periods, PV, start, end, type, callback) {
         if (isNaN(end) || !end.isInteger() || end > periods || (end < start || end < 1)) throw new Error('end must be a positive integer that is greater 0 or start, if provided, and less than or equal to periods');
         if (isNaN(type) || type !== 0 || type !== 1) throw new Error('type must be 0 or 1');
 
-
         var result;
 
         deferred.resolve(result);
@@ -204,66 +203,15 @@ calculator.CUMIPMT = function (rate, periods, PV, start, end, type, callback) {
     }
 };
 
-calculator.calcAccruedInterest = function (principle, months, rate, cb) {
-    try {
-        var deferred = Q.defer();
-
-        if (typeof principle === 'function') cb = principle;
-        if (typeof months === 'function') cb = months;
-        if (typeof rate === 'function') cb = rate;
-        if (!principle || isNaN(principle) || principle < 1) throw new Error('principle must be a positive number');
-        if (!months || isNaN(months) || !months.isInteger() || months < 1) throw new Error('months must be a positive integer');
-        if (!rate || isNaN(rate) || rate < 0) throw new Error('rate must be a positive number');
-
-        var i = rate / 1200;
-        var result = (principle * Math.pow(1 + i, months)) - principle;
-        deferred.resolve(result);
-        if (cb) return deferred.promise.nodeify(cb);
-        return result;
-
-    } catch (err) {
-        deferred.reject(err);
-        if (cb) return deferred.promise.nodeify(cb);
-        return err;
-    }
-};
-
 /*
- Calculates the amount of a loan, using the following arguments:
- months (required) - the number of months of the loan
- rate (required) - the interest rate of the loan, provided as a percentage, e.g., 10.5
- payment (required) - the monthly payments made for the loan
- */
-calculator.calcAmount = function (months, rate, payment, cb) {
-    var deferred = Q.defer();
-    try {
-        if (typeof months === 'function') cb = months;
-        if (typeof rate === 'function') cb = rate;
-        if (typeof payment === 'function') cb = payment;
-        if (!months || isNaN(months) || !months.isInteger() || months < 1) throw new Error('months must be a positive integer');
-        if (!rate || isNaN(rate) || rate < 0) throw new Error('rate must be a positive number');
-        if (!payment || isNaN(payment) || payment < 0) throw new Error('payment must be a positive number');
-
-        rate = rate / 1200;
-        var result = ((rate * Math.pow((rate + 1), months)) / Math.pow((rate + 1), months));
-
-        deferred.resolve(result);
-
-        if (cb) return deferred.promise.nodeify(cb);
-        return result;
-
-    } catch (err) {
-        if (cb) return deferred.promise.nodeify(cb);
-        return err;
-    }
-};
-
-/*
- Calculates future value of an investment based on equal periodic payments. Arugments include:
- rate (required) - the periodic interest rate
- NPER (required) - the number of periods
- PMT (required) - the equal periodic payments
- type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
+FV
+--
+Calculates future value of an investment based on equal periodic payments. Arugments include:
+* rate (required) - the periodic interest rate
+* NPER (required) - the number of periods
+* PMT (required) - the equal periodic payments
+* type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
+* callback (optional) - callback for asynchronous processing using Node's CommonJS format
  */
 calculator.FV = function (rate, NPER, PMT, type, callback) {
     var deferred = Q.defer();
@@ -296,14 +244,17 @@ calculator.FV = function (rate, NPER, PMT, type, callback) {
     }
 };
 
-
 /*
- Caculates the number of periods for an investment based on periodic, constant payments
- and a constant interest rate. Arguments include:
- rate (required) - the periodic interest rate
- PMT (required) - the constant payment paid in each period
- FV (required) - the future value of the last period
- type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
+NPER
+----
+
+Caculates the number of periods for an investment based on periodic, constant payments
+and a constant interest rate. Arguments include:
+* rate (required) - the periodic interest rate
+* PMT (required) - the constant payment paid in each period
+* FV (required) - the future value of the last period
+* type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
+* callback (optional) - callback for asynchronous processing using Node's CommonJS format
  */
 //determine the months financed
 calculator.NPER = function (rate, PMT, FV, type, callback) {
@@ -337,44 +288,6 @@ calculator.NPER = function (rate, PMT, FV, type, callback) {
         return err;
     }
 };
-/*
- Calculates the number of payments of a loan based upon the frequency of the loan. Arguments include:
-
- */
-
-// determine the interest rate financed http://www.hughchou.org/calc/formula.html
-calculator.calcInterest = function (amount, months, payment, cb) {
-    var deferred = Q.defer();
-    try {
-
-
-        var result = 0;
-
-        var min_rate = 0, max_rate = 100;
-        while (min_rate < max_rate - 0.0001) {
-            var mid_rate = (min_rate + max_rate) / 2,
-                j = mid_rate / 1200,
-                guessed_pmt = amount * ( j / (1 - Math.pow(1 + j, months * -1)));
-
-            if (guessed_pmt > payment) {
-                max_rate = mid_rate;
-            }
-            else {
-                min_rate = mid_rate;
-            }
-        }
-        result = mid_rate;
-        deferred.resolve(result);
-
-        if (cb) return deferred.promise.nodeify(cb);
-        return result;
-
-    } catch (err) {
-        if (cb) return deferred.promise.nodeify(cb);
-        return null;
-    }
-};
-
 /*
  PMT
  ---
@@ -414,24 +327,24 @@ calculator.PMT = function (PV, NPER, rate, type, callback) {
     }
 };
 /*
- BalloonLoan
- --------------
+BalloonLoan
+--------------
 
- This function calculates the payment or amount for a loan that includes a balloon feature. A loan
- with a balloon feature either has a amount of principal that must be paid off after all
- periodic payments have been made OR requires to borrower to pay off the loan at a date
- before all periodic payments have been made. This function includes the following arguments:
+This function calculates the payment or amount for a loan that includes a balloon feature. A loan
+with a balloon feature either has a amount of principal that must be paid off after all
+periodic payments have been made OR requires to borrower to pay off the loan at a date
+before all periodic payments have been made. This function includes the following arguments:
 
- * PV (required) - the amount of the loan
- * rate (required) - the periodic interest rate
- * NPER (required) - the number of periods of the loan
- * balloonAmount (required) - the principal amount of the balloon.
-  This is required if the balloonPeriod is not provided. If the balloonPeriod is provided
- and is less than NPER, the balloonAmount will be computed.
-  * balloonPeriod (optional) - the period in which the balloon payment is required.
- * type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
+* PV (required) - the amount of the loan
+* rate (required) - the periodic interest rate
+* NPER (required) - the number of periods of the loan
+* balloonAmount (required) - the principal amount of the balloon.
+This is required if the balloonPeriod is not provided. If the balloonPeriod is provided
+and is less than NPER, the balloonAmount will be computed.
+* balloonPeriod (optional) - the period in which the balloon payment is required.
+* type (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
 
- This function returns an object that contains the balloonAmount and the balloonPayment for the loan.
+This function returns an object that contains the balloonAmount and the balloonPayment for the loan.
  */
 calculator.BalloonLoan = function (PV, rate, NPER, balloonAmount, balloonPeriod, type, callback) {
     var deferred = Q.defer();
@@ -485,33 +398,33 @@ calculator.BalloonLoan = function (PV, rate, NPER, balloonAmount, balloonPeriod,
 /*
 GenAmortizationSchedule
 -----------------------
- This function generates an amortization schedule. The schedule is returned as a Javascript object.
+This function generates an amortization schedule. The schedule is returned as a Javascript object.
 
- The function accepts the following arguments:
- * amount (required): the starting principal amount of the loan
- * months (required): the number of whole months over which the loan extends
- * rate (required): the annual interest rate of the loan expressed as a percentage, e.g., 10.5
- * firstPaymentDate (optional): the date the first payment will be made
- * frequency (optional): the payment frequency, which can be any of the following:
- - semimonthly - twice a month
- - monthly - once each month
- - bimonthly - every two months
- - quarterly - every quarter
- - semiannually - ever 6 months
- - annually - ever 12 months
- - none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
- * balloonDate (optional/required): the date a balloon payment will be made. This date will be forced to earliest
- corresponding payment date. This date will be ignored if it is greater than the term (months) of the
- loan.
+The function accepts the following arguments:
+* amount (required): the starting principal amount of the loan
+* months (required): the number of whole months over which the loan extends
+* rate (required): the annual interest rate of the loan expressed as a percentage, e.g., 10.5
+* firstPaymentDate (optional): the date the first payment will be made
+* frequency (optional): the payment frequency, which can be any of the following strings:
+- semimonthly - twice a month
+- monthly - once each month
+- bimonthly - every two months
+- quarterly - every quarter
+- semiannually - ever 6 months
+- annually - ever 12 months
+- none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
+* balloonDate (optional/required): the date a balloon payment will be made. This date will be forced to earliest
+corresponding payment date. This date will be ignored if it is greater than the term (months) of the
+loan.
 
- The return object contains an array, with each array element containing the following fields:
- * paymentNumber - the number for a payment
- * principle: the principal balance remaining at the end of the period
- * accumulatedInterest: the interest accumulate from all previous periods through this period
- * payment: the periodic payment the borrower is required to pay
- * paymentToPrinciple: the amount of the payment allocated to paying down the principal
- * paymentToInterest: the amount of the payment allocated to paying interest
- * date: the date of the payment for the period
+The return object contains an array, with each array element containing the following fields:
+* paymentNumber - the number for a payment
+* principle: the principal balance remaining at the end of the period
+* accumulatedInterest: the interest accumulate from all previous periods through this period
+* payment: the periodic payment the borrower is required to pay
+* paymentToPrinciple: the amount of the payment allocated to paying down the principal
+* paymentToInterest: the amount of the payment allocated to paying interest
+* date: the date of the payment for the period
 
  */
 calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate, frequency, balloonDate, type, callback) {
@@ -531,7 +444,7 @@ calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate,
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (firstPaymentDate.constructor !== Date) throw new Error('firstPaymentDate must be Javascript Date');
-        if(typeof frequency !== 'string') throw new Error('frequency must be a string');
+        if(frequency && typeof frequency !== 'string') throw new Error('frequency must be a string');
         if (balloonDate && balloonDate.constructor !== Date) throw new Error('balloonDate must be Javascript Date');
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
 
@@ -658,19 +571,18 @@ calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate,
 };
 
 /*
- RemainingBalance
- ----------------
- This function calculates the remaining balance of a loan. It can be used to
- calculate a balloon payment because the amount due at the end of a balloon
- loan is effectively the same as calculating the balance of a conventional
- loan after the same period. Arguments include:
+RemainingBalance
+----------------
+This function calculates the remaining balance of a loan. It can be used to
+calculate a balloon payment because the amount due at the end of a balloon
+loan is effectively the same as calculating the balance of a conventional
+loan after the same period. Arguments include:
 
- * PV (required) - the principal PV of the loan
- * rate (required) - the interest rate per NPER
- * NPER (required) - NPER (periods) of the loan (amortization period)
- * PMT (required) - payment per period
- * type (required) - whether the payment is due at the beginning (1) or the end (0) of a period
- *
+* PV (required) - the principal PV of the loan
+* rate (required) - the interest rate per NPER
+* NPER (required) - NPER (periods) of the loan (amortization period)
+* PMT (required) - payment per period
+* type (required) - whether the payment is due at the beginning (1) or the end (0) of a period
  */
 calculator.RemainingBalance = function (PV, rate, NPER, PMT, type, callback) {
 
@@ -709,16 +621,18 @@ calculator.RemainingBalance = function (PV, rate, NPER, PMT, type, callback) {
 };
 
 /*
- This function calculates the first payment date of a loan. It defaults to
- the first day of the month which is at least one full month from the date
- the loan was funded (origination or funding date).
+FirstPaymentDate
+----------------
+This function calculates the first payment date of a loan. It defaults to
+the first day of the month which is at least one full month from the date
+the loan was funded (origination or funding date).
 
- This function takes the following arguments:
- dateFunded (required) - the funding or origination date of the loan
- firstPaymentDate (optional) - desired day of the month for the payment - defaults to the first day
- cb (optional) - optional CommonJS (Node style) callback
+This function takes the following arguments:
+* dateFunded (required) - the funding or origination date of the loan
+* firstPaymentDay (optional) - desired day of the month for the payment - defaults to the first day
+* cb (optional) - optional CommonJS (Node style) callback
  */
-calculator.firstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
+calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 
     var deferred = Q.defer();
     var firstPaymentMonth;
@@ -758,25 +672,25 @@ calculator.firstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 };
 
 /*
- payments
- --------
- Calculates the number of payments for a loan. This is different than NPER.
- NPER calculates the number of periods used in an annuity or loan from
- a financial perspective. This function looks at how frequently a customer
- chooses to make payments. This function has the following arguments:
- * NPER (required) - the number of periods used in calculating interest for a loan
- * frequency (required): the payment frequency, which can be any of the following:
- - semimonthly - twice a month
- - monthly - once each month
- - bimonthly - every two months
- - quarterly - every quarter
- - semiannually - ever 6 months
- - annually - ever 12 months
- - none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
- * callback (optional) - function of CommonJs/NodeJs return, e.g., function(err, result)
+Payments
+--------
+Calculates the number of payments for a loan. This is different than NPER.
+NPER calculates the number of periods used in an annuity or loan from
+a financial perspective. This function looks at how frequently a customer
+chooses to make payments. This function has the following arguments:
+* NPER (required) - the number of periods used in calculating interest for a loan
+* frequency (required): the payment frequency, which can be any of the following:
+- semimonthly - twice a month
+- monthly - once each month
+- bimonthly - every two months
+- quarterly - every quarter
+- semiannually - ever 6 months
+- annually - ever 12 months
+- none or one - only one payment at the end of the loan - typically don't mix this with balloonDate
+* callback (optional) - function of CommonJs/NodeJs return, e.g., function(err, result)
 
  */
-calculator.payments = function (NPER, frequency, callback) {
+calculator.Payments = function (NPER, frequency, callback) {
     var deferred = Q.defer();
     var payments;
     try {
@@ -814,6 +728,25 @@ calculator.payments = function (NPER, frequency, callback) {
         return err;
     }
 };
+/*
+PastDue
+-------
+This calculates if a loan is past due. To do so, it takes a loan with certain parameters and
+analyzes the loan against a series of transactions. If the total interest and the total principal
+paid on the loan is less than what it should be, the loan is past due.
+
+This function takes the following arguments:
+* loan object (required) - a Javascript object with the following required properties:
+    * PV (required) - the loan amount
+    * NPER (required) - the total number of loan periods
+    * PMT (required) - the payment per loan period
+    * FirstPaymentDate (required) - the date the first payment was required
+    * DeterminationDate (required) - the date the determination is to be made
+    * GraceDays (optional) - the number of days after a payment a borrower has to make a payment
+    * type - (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
+
+* transactions array (required)
+ */
 
 
 //rounds numbers to two decimal places
