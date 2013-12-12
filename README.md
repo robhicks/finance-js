@@ -98,7 +98,7 @@ The return object contains an array, with each array element containing the foll
 * paymentToInterest: the amount of the payment allocated to paying interest
 * date: the date of the payment for the period
 
-payments
+Payments
 --------
 Calculates the number of payments for a loan. This is different than NPER.
 NPER calculates the number of periods used in an annuity or loan from

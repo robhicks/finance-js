@@ -9,31 +9,28 @@ var calculator = {};
 
 calculator.self = calculator;
 
-calculator.isFunction = function (callback) {
-    return (typeof callback === 'function');
+calculator.isFunction = function (func) {
+    return (typeof func === 'function');
 };
 
 calculator.isPositiveNumber = function (number) {
-    if (!number) return true;
-    return (!isNaN(number) && number > 0);
+    return (number != null && !isNaN(number) && number > 0);
 };
 
 calculator.isPositiveInteger = function (number) {
-    if (!number) return true;
-    return (!isNaN(number) && number.isInteger() && number > 0);
+    return (number != null && !isNaN(number) && number.isInteger() && number > 0);
 };
 
 calculator.isProperType = function (type) {
-    if (!type) return true;
-    return (!isNaN(type) && (type === 0 || type === 1));
+    return (type != null && !isNaN(type) && (type === 0 || type === 1));
 };
 
 calculator.isRequiredPositiveNumber = function (number) {
-    return (number && calculator.isPositiveNumber(number));
+    return (number != null && calculator.isPositiveNumber(number));
 };
 
 calculator.isRequiredPositiveInteger = function (number) {
-    return (number && calculator.isPositiveInteger(number));
+    return (number != null && calculator.isPositiveInteger(number));
 };
 
 calculator.validationErrors = [
@@ -60,6 +57,10 @@ calculator.PVofLumpSum = function (rate, NPER, FV, callback) {
         if (typeof NPER === 'function') callback = NPER;
         if (typeof FV === 'function') callback = FV;
 
+        rate = Number(rate);
+        NPER = Number(NPER);
+        FV = Number(FV);
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
@@ -67,6 +68,7 @@ calculator.PVofLumpSum = function (rate, NPER, FV, callback) {
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
 
         var result = FV / Math.pow(1 + rate, NPER);
+        result = result.round(2);
         deferred.resolve(result);
 
         if (callback) return deferred.promise.nodeify(callback);
@@ -98,11 +100,16 @@ calculator.PV = function (rate, NPER, PMT, type, callback) {
         if (typeof PMT === 'function') callback = PMT;
         if (typeof type === 'function') callback = type;
 
+        rate = Number(rate);
+        NPER = Number(NPER);
+        PMT = Number(PMT);
+        type = type != null ? Number(type) : null;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
         if (!calculator.isRequiredPositiveNumber(PMT)) throw new Error('PMT' + calculator.validationErrors[0]);
-        if (!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
+        if (type && !calculator.isProperType(type)) throw new Error('type' + calculator.validationErrors[2]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
         type = type || 0;
 
@@ -110,6 +117,7 @@ calculator.PV = function (rate, NPER, PMT, type, callback) {
         var annuityDue = annuityImmediate * (1 + rate);
 
         var result = type === 0 ? annuityImmediate : annuityDue;
+        result = result.round(2);
 
         deferred.resolve(result);
         if (callback) return deferred.promise.nodeify(callback);
@@ -140,12 +148,16 @@ calculator.PVofPerpetuity = function (rate, PMT, callback) {
         if (typeof rate === 'function') callback = rate;
         if (typeof PMT === 'function') callback = PMT;
 
+        rate = Number(rate);
+        PMT = Number(PMT);
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveNumber(PMT)) throw new Error('PMT' + calculator.validationErrors[0]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
 
         var result = PMT / rate;
+        result = result.round(2);
 
         deferred.resolve(result);
         if (callback) return deferred.promise.nodeify(callback);
@@ -170,31 +182,52 @@ CumulativeInterestPaid
  * type (optional) - whether payments are made at the end of each period (0) or at the start of each period (1)
  * callback (optional) - callback for asynchronous processing using Node's CommonJS format
  */
-calculator.CumulativeInterestPaid = function (rate, periods, PV, start, end, type, callback) {
+calculator.CumulativeInterestPaid = function (rate, NPER, PV, start, end, type, callback) {
     var deferred = Q.defer();
     try {
         //assure we can pass promise to callback
         if (typeof rate === 'function') callback = rate;
-        if (typeof periods === 'function') callback = periods;
+        if (typeof NPER === 'function') callback = NPER;
         if (typeof PV === 'function') callback = PV;
         if (typeof start === 'function') callback = start;
         if (typeof end === 'function') callback = end;
         if (typeof type === 'function') callback = type;
+
+        rate = Number(rate);
+        NPER = Number(NPER);
+        PV = Number(PV);
+        start = start != null ? Number(start) : null;
+        end = end != null ? Number(end) : null;
+        type = type != null ? Number(type) : null;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
-        if (!calculator.isRequiredPositiveNumber(PMT)) throw new Error('PMT' + calculator.validationErrors[0]);
+        if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
+        if (!calculator.isRequiredPositiveNumber(PV)) throw new Error('PV' + calculator.validationErrors[0]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
+        if(start && (!calculator.isPositiveInteger(start) || start < 1 || start > NPER)) throw new Error('start' +  calculator.validationErrors[1]);
+        if(end && (!calculator.isPositiveInteger(end) || end < start || end > NPER)) throw new Error('end' +  calculator.validationErrors[1]);
+        if (type && !calculator.isProperType(type)) throw new Error('type' + calculator.validationErrors[2]);
 
-        if (!rate || isNaN(rate) || rate < 0) throw new Error('rate must be a positive number');
-        if (!periods || isNaN(periods) || !periods.isInteger() || periods < 1) throw new Error('periods must be a positive integer');
-        if (!PV || isNaN(PV) || PV < 1) throw new Error('PV must be a positive number');
-        if (isNaN(start) || !start.isInteger() || start < 1 || start > periods) throw new Error('start must be a positive integer that is greater 0 and less than periods');
-        if (isNaN(end) || !end.isInteger() || end > periods || (end < start || end < 1)) throw new Error('end must be a positive integer that is greater 0 or start, if provided, and less than or equal to periods');
-        if (isNaN(type) || type !== 0 || type !== 1) throw new Error('type must be 0 or 1');
+        var ip = function (rate, NPER, PV, type){
+            return type && type === 1
+                ? (PV * (Math.pow(1 + rate, NPER) - 1)) * (1 + rate)
+                : PV * (Math.pow(1 + rate, NPER) - 1);
+        };
 
-        var result;
+        var presentValueBeforeStart = start != null
+            ? ip(rate, start, PV, type) + PV
+            : null;
+
+        var result = presentValueBeforeStart
+            ? ip(rate, end != null ? end - start : NPER - start, presentValueBeforeStart, type)
+            : ip(rate, NPER, PV, type);
+
+        result = result.round(2);
 
         deferred.resolve(result);
+        if (callback) return deferred.promise.nodeify(callback);
+        return result;
 
     } catch (err) {
         deferred.reject(err);
@@ -223,15 +256,20 @@ calculator.FV = function (rate, NPER, PMT, type, callback) {
         if (typeof PV === 'function') callback = PV;
         if (typeof type === 'function') callback = type;
 
+        rate = Number(rate);
+        NPER = Number(NPER);
+        PMT = Number(PMT);
+        type = type != null ? Number(type) : 0;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
         if (!calculator.isRequiredPositiveNumber(PMT)) throw new Error('PMT' + calculator.validationErrors[0]);
         if (!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
-        type = type || 0;
 
         var result = calculator.PV(rate, NPER, PMT, type) * Math.pow(1 + rate, NPER);
+        result = result.round(2);
 
         deferred.resolve(result);
         if (callback) return deferred.promise.nodeify(callback);
@@ -266,18 +304,22 @@ calculator.NPER = function (rate, PMT, FV, type, callback) {
         if (typeof FV === 'function') callback = FV;
         if (typeof type === 'function') callback = type;
 
+        rate = Number(rate);
+        PMT = Number(PMT);
+        FV = Number(FV);
+        type = type != null ? Number(type) : 0;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveNumber(PMT)) throw new Error('PMT' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveNumber(FV)) throw new Error('FV' + calculator.validationErrors[0]);
-        if (!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
+        if (type != null &&!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
-        type = type || 0;
 
         var result = type == 0
             ? Math.round(-Math.log(1 - rate * FV / PMT) / Math.log(1 + rate))
-            : Math.round(-Math.log(1 - rate * FV / PMT) / Math.log(1 + rate)) - 1
-        //var result = Math.round(Math.log(1 + ((FV * rate) / PV)) / Math.log(1 + rate));
+            : Math.round(-Math.log(1 - rate * FV / PMT) / Math.log(1 + rate)) - 1;
+
         deferred.resolve(result);
         if (callback) return deferred.promise.nodeify(callback);
         return result;
@@ -305,17 +347,23 @@ calculator.PMT = function (PV, NPER, rate, type, callback) {
         if (typeof rate === 'function') callback = rate;
         if (typeof NPER === 'function') callback = NPER;
         if (typeof type === 'function') callback = type;
+
+        rate = Number(rate);
+        NPER = Number(NPER);
+        PV = Number(PV);
+        type = type != null ? Number(type) : 0;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(PV)) throw new Error('PV' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
-        type = type || 0;
 
         NPER = type === 0 ? NPER : NPER + 1;
 
         var result = PV * (rate * Math.pow(1 + rate, NPER)) / (Math.pow(1 + rate, NPER) - 1);
+        result = result.round(2);
 
         deferred.resolve(result);
         if (callback) return deferred.promise.nodeify(callback);
@@ -332,7 +380,7 @@ BalloonLoan
 
 This function calculates the payment or amount for a loan that includes a balloon feature. A loan
 with a balloon feature either has a amount of principal that must be paid off after all
-periodic payments have been made OR requires to borrower to pay off the loan at a date
+periodic payments have been made OR requires the borrower to pay off the loan at a date
 before all periodic payments have been made. This function includes the following arguments:
 
 * PV (required) - the amount of the loan
@@ -359,15 +407,20 @@ calculator.BalloonLoan = function (PV, rate, NPER, balloonAmount, balloonPeriod,
         if (typeof balloonPeriod === 'function') callback = balloonPeriod;
         if (typeof type === 'function') callback = type;
 
+        rate = Number(rate);
+        NPER = Number(NPER);
+        PV = Number(PV);
+        balloonAmount = Number(balloonAmount);
+        balloonPeriod = balloonPeriod != null ? Number(balloonPeriod) : null;
+        type = type != null ? Number(type) : 0;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(PV)) throw new Error('PV' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
         if (!calculator.isPositiveNumber(balloonAmount)) throw new Error('balloonAmount' + calculator.validationErrors[0]);
-        if (!calculator.isPositiveInteger(balloonPeriod)) throw new Error('balloonPeriod' + calculator.validationErrors[0]);
-        if (!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
+        if (balloonPeriod && !calculator.isPositiveInteger(balloonPeriod)) throw new Error('balloonPeriod' + calculator.validationErrors[0]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
-        type = type || 0;
         NPER = type === 0 ? NPER : NPER + 1;
 
         var result = {};
@@ -380,8 +433,8 @@ calculator.BalloonLoan = function (PV, rate, NPER, balloonAmount, balloonPeriod,
             result.balloonPayment = payment;
             result.balloonAmount = calculator.RemainingBalance(PV, rate, balloonPeriod, payment, type);
         } else {
-            result.balloonAmount = balloonAmount;
-            result.balloonPayment = (PV - (balloonAmount / Math.pow(1 + rate, NPER))) * (rate / (1 - Math.pow(1 + rate, -NPER)))
+            result.balloonAmount = balloonAmount.round(2);
+            result.balloonPayment = ((PV - (balloonAmount / Math.pow(1 + rate, NPER))) * (rate / (1 - Math.pow(1 + rate, -NPER)))).round(2);
         }
 
         deferred.resolve(result);
@@ -439,6 +492,13 @@ calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate,
         if (typeof frequency === 'function') callback = frequency;
         if (typeof balloonDate === 'function') callback = balloonDate;
         if (typeof type === 'function') callback = type;
+
+        PV = Number(PV);
+        NPER = Number(NPER);
+        rate = Number(rate);
+        frequency = Number(frequency);
+        type = type != null ? Number(type) : 0;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(PV)) throw new Error('PV' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
@@ -596,6 +656,12 @@ calculator.RemainingBalance = function (PV, rate, NPER, PMT, type, callback) {
         if (typeof PMT === 'function') callback = PMT;
         if (typeof type === 'function') callback = type;
 
+        PV = Number(PV);
+        rate = Number(rate);
+        NPER = Number(NPER);
+        PMT = Number(PMT);
+        type = type != null ? Number(type) : 0;
+
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(PV)) throw new Error('PV' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
@@ -606,6 +672,8 @@ calculator.RemainingBalance = function (PV, rate, NPER, PMT, type, callback) {
         type = type || 0;
 
         var result = PV * Math.pow(1 + rate, NPER) - PMT * ((Math.pow(1 + rate, NPER) - 1) / rate);
+
+        result = result.round(2);
 
 
         deferred.resolve(result);
@@ -635,13 +703,10 @@ This function takes the following arguments:
 calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 
     var deferred = Q.defer();
-    var firstPaymentMonth;
-    var firstPaymentYear;
-    var result;
 
     if (!dateFunded || dateFunded.constructor !== Date) deferred.reject(new Error('dateFunded must be Date object'));
-    if (firstPaymentDay) {
-        if (firstPaymentDay === 'function') {
+    if (firstPaymentDay){
+        if (typeof firstPaymentDay === 'function') {
             cb = firstPaymentDay;
         } else if (!firstPaymentDay.isInteger() || firstPaymentDay < 1) {
             deferred.reject(new Error('firstPaymentDay must be a positive integer'));
@@ -655,12 +720,14 @@ calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
     try {
         dateFunded = moment(dateFunded);
         if (firstPaymentDay == 1) {
-            result = dateFunded.add('M', 1).date(firstPaymentDay);
+            dateFunded.add('M', 1).date(firstPaymentDay);
         } else {
-            result = dateFunded.add('M', 2).date(firstPaymentDay)
+            dateFunded.add('M', 2).date(firstPaymentDay);
         }
 
-        deferred.resolve(result.toISOString());
+        var result = dateFunded.toISOString();
+
+        deferred.resolve(result);
         if (cb) return deferred.promise.nodeify(cb);
         return  result;
 
@@ -698,23 +765,26 @@ calculator.Payments = function (NPER, frequency, callback) {
         //assure we can pass promise to callback
         if (typeof NPER === 'function') callback = NPER;
         if (typeof frequency === 'function') frequency = NPER;
+        frequency = frequency.toLowerCase();
+
+        NPER = Number(NPER);
 
         //validate arguments
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
 
-        if (!frequency || frequency === 'monthly') {
+        if (frequency == null || frequency === 'monthly') {
             payments = NPER;
-        } else if (frequency.toLowerCase() === 'semimonthly') {
+        } else if (frequency === 'semimonthly') {
             (payments = NPER * 2).toInteger();
-        } else if (frequency.toLowerCase() === 'bimonthly') {
+        } else if (frequency === 'bimonthly') {
             payments = (NPER / 2).toInteger();
-        } else if (frequency.toLowerCase() === 'quarterly') {
+        } else if (frequency === 'quarterly') {
             payments = (NPER / 4).toInteger();
-        } else if (frequency.toLowerCase() === 'semiannually') {
+        } else if (frequency === 'semiannually') {
             payments = (NPER / 6).toInteger();
-        } else if (frequency.toLowerCase() === 'annually') {
+        } else if (frequency === 'annually') {
             payments = (NPER / 12).toInteger();
-        } else if (frequency.toLowerCase() === 'none' || frequency.toLowerCase() === 'one') {
+        } else if (frequency === 'none' || frequency === 'one') {
             payments = 1;
         }
 
@@ -749,15 +819,16 @@ This function takes the following arguments:
  */
 
 
-//rounds numbers to two decimal places
+//rounds numbers to decimal places
 Number.prototype.round = function (decimalPlaces) {
-    var places = decimalPlaces && !isNaN(decimalPlaces && decimalPlaces > 0) ? decimalPlaces : 1;
-    return Math.round(this * Math.pow(10, places)) / Math.pow(10, places);
+    var places = decimalPlaces != null && !isNaN(decimalPlaces) && decimalPlaces >= 0 ? decimalPlaces : 2;
+    return (Math.round(this * Math.pow(10, places)) / Math.pow(10, places));
 };
 
 //eliminate this when Node supports Harmony
 Number.prototype.isInteger = function () {
-    return parseFloat(this) === parseInt(this)
+    console.log('integer:', parseFloat(this) === parseInt(this));
+    return parseFloat(this) === parseInt(this);
 };
 
 //eliminate this when Node supports Harmony and Harmony has adopted toInteger()
