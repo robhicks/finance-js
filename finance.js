@@ -337,32 +337,42 @@ calculator.NPER = function (rate, PMT, FV, type, callback) {
  * PV (required) - loan amount
  * NPER (required) - the number of periods
  * rate (required) - the rate per period
+ * interestOnly (optional) - boolean indicating if the loan is an interest only loan
  * type (optional) - whether the payment is made at the beginning (1) or the end (0) of a period
  */
-calculator.PMT = function (PV, NPER, rate, type, callback) {
+calculator.PMT = function (PV, NPER, rate, interestOnly, type, callback) {
     var deferred = Q.defer();
     try {
         //assure we can pass promise to callback
         if (typeof PV === 'function') callback = PV;
-        if (typeof rate === 'function') callback = rate;
         if (typeof NPER === 'function') callback = NPER;
+        if (typeof rate === 'function') callback = rate;
+        if (typeof interestOnly === 'function') callback = interestOnly;
         if (typeof type === 'function') callback = type;
 
         rate = Number(rate);
         NPER = Number(NPER);
         PV = Number(PV);
         type = type != null ? Number(type) : 0;
+        interestOnly != null ? Boolean(interestOnly) : false;
 
         //validate arguments
         if (!calculator.isRequiredPositiveNumber(PV)) throw new Error('PV' + calculator.validationErrors[0]);
         if (!calculator.isRequiredPositiveInteger(NPER)) throw new Error('NPER' + calculator.validationErrors[1]);
-        if (!calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
+        if (rate != 0 && !calculator.isRequiredPositiveNumber(rate)) throw new Error('rate' + calculator.validationErrors[0]);
         if (!calculator.isProperType(type)) throw new Error('type', calculator.validationErrors[2]);
         if (callback && !calculator.isFunction(callback)) throw new Error('callback', calculator.validationErrors[3]);
 
         NPER = type === 0 ? NPER : NPER + 1;
 
-        var result = PV * (rate * Math.pow(1 + rate, NPER)) / (Math.pow(1 + rate, NPER) - 1);
+        var result = rate == 0
+            ? interestOnly
+                ? 0
+                : PV / NPER
+            : interestOnly
+                ? (PV * (rate * Math.pow(1 + rate, NPER)) / (Math.pow(1 + rate, NPER) - 1)) - PV
+                : PV * (rate * Math.pow(1 + rate, NPER)) / (Math.pow(1 + rate, NPER) - 1);
+
         result = result.round(2);
 
         deferred.resolve(result);
@@ -703,6 +713,7 @@ This function takes the following arguments:
 calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 
     var deferred = Q.defer();
+    var currentDate = moment(new Date());
 
     if (!dateFunded || dateFunded.constructor !== Date) deferred.reject(new Error('dateFunded must be Date object'));
     if (firstPaymentDay){
@@ -719,11 +730,8 @@ calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 
     try {
         dateFunded = moment(dateFunded);
-        if (firstPaymentDay == 1) {
-            dateFunded.add('M', 1).date(firstPaymentDay);
-        } else {
-            dateFunded.add('M', 2).date(firstPaymentDay);
-        }
+        if(currentDate.date() > firstPaymentDay) dateFunded.add('M', 2).date(firstPaymentDay)
+        else dateFunded.add('M', 1).date(firstPaymentDay);
 
         var result = dateFunded.toISOString();
 
@@ -827,7 +835,6 @@ Number.prototype.round = function (decimalPlaces) {
 
 //eliminate this when Node supports Harmony
 Number.prototype.isInteger = function () {
-    console.log('integer:', parseFloat(this) === parseInt(this));
     return parseFloat(this) === parseInt(this);
 };
 
