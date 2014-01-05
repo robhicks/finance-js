@@ -480,7 +480,7 @@ The function accepts the following arguments:
 corresponding payment date. This date will be ignored if it is greater than the term (months) of the
 loan.
 
-The return object contains an array, with each array element containing the following fields:
+The function returns an array with each array element containing the following fields:
 * paymentNumber - the number for a payment
 * principle: the principal balance remaining at the end of the period
 * accumulatedInterest: the interest accumulate from all previous periods through this period
@@ -585,11 +585,10 @@ calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate,
 
         var balloonAmount = calculator.BalloonLoan(PV, rate, payments, null, balloonPeriod, type).balloonAmount;
 
-        var obj = {};
-        var payment = calculator.PMT(PV, payments, rate);
+        var schedule = [];
+       var payment = calculator.PMT(PV, payments, rate);
         var balance = PV;
         var totalInterest = 0.0;
-        obj.schedule = [];
         var currInterest = 0;
         var currPrinciple = 0;
 
@@ -604,7 +603,7 @@ calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate,
                 balance = 0;
             }
 
-            obj.schedule.push({
+            schedule.push({
                 paymentNumber: i + 1,
                 principle: balance.round(2),
                 accumulatedInterest: totalInterest.round(2),
@@ -629,9 +628,9 @@ calculator.GenAmortizationSchedule = function (PV, NPER, rate, firstPaymentDate,
 
         }
 
-        deferred.resolve(obj);
+        deferred.resolve(schedule);
         if (callback) return deferred.promise.nodeify(callback);
-        return obj;
+        return schedule;
 
     } catch (err) {
         deferred.reject(err);
@@ -806,26 +805,110 @@ calculator.Payments = function (NPER, frequency, callback) {
         return err;
     }
 };
+
+/*
+EarnedAmount
+------------
+
+This function calculates the amount that should have been received for a loan at a specified
+date in the future.
+
+This function takes a Javascript object and an optional callback. The Javascript object should
+include the following:
+
+   * InitialLoanAmount - the loan amount due when the loan was originated and closed
+   * OriginationDate - the date when the loan was originated and closed
+   * InterestPrepaymentAmount - the amount paid on the OriginationDate to prepay interest on
+     the loan up to the FirstPaymentDate or before.
+   * FirstPaymentDate - the date the first payment should be received
+   * Rate - the annual interest rate
+   * Term - the term of the loan in months
+   * Payments - the number of payments to be paid during the Term
+   * DeterminationDate - the date when the amount EarnedAmount is calculated
+*/
+
+calculator.EarnedAmount = function(obj, cb){
+   var deferred = Q.defer();
+
+   try{
+      var InitialLoanAmount = obj.InitialLoanAmount || 0;
+      var OriginationDate = moment(obj.OriginationDate) || moment();
+      var InterestPrepaymentAmount = obj.InterestPrepaymentAmount || 0;
+      var FirstPaymentDate = moment(obj.FirstPaymentDate) || moment();
+      var Term = obj.Term || 0;
+      var Frequency = obj.Frequency || 'monthly';
+      var Payments = calculator.Payments(Term, Frequency);
+      var Rate = obj.Rate || 0;
+      var DeterminationDate = moment(obj.DeterminationDate) || moment();
+      var daysBeforeFirstPayment = FirstPaymentDate.diff(OriginationDate, 'days');
+      var periodicRate = Rate / 100 / (12 * Payments / Term);
+      var dailyRate = Rate / 100 / 365;
+      var interestEarnedBeforeFirstPayment = daysBeforeFirstPayment * InitialLoanAmount * dailyRate - InterestPrepaymentAmount;
+      var numberOfMonths = DeterminationDate.diff(FirstPaymentDate, 'months');
+      var numberOfExtraDays = DeterminationDate.diff(FirstPaymentDate, 'days') - numberOfMonths * 30;
+      var Payment = calculator.PMT(InitialLoanAmount, Payments, periodicRate);
+      var cumInterestPaid = calculator.CumulativeInterestPaid(periodicRate, Payments, InitialLoanAmount);
+      var remainingBalance = calculator.RemainingBalance(InitialLoanAmount, periodicRate,  numberOfMonths, Payment);
+      var interestEarnedAfterLastPayment = numberOfExtraDays * remainingBalance * dailyRate;
+      var totalAmountEarned = interestEarnedBeforeFirstPayment + cumInterestPaid + InitialLoanAmount - remainingBalance + interestEarnedAfterLastPayment;
+
+      deferred.resolve(totalAmountEarned);
+      if (cb) return deferred.promise.nodeify(cb);
+      return totalAmountEarned;
+   } catch(err){
+      deferred.reject(err);
+      if (cb) return deferred.promise.nodeify(cb);
+      return err;
+   }
+};
+
+
 /*
 PastDue
 -------
-This calculates if a loan is past due. To do so, it takes a loan with certain parameters and
-analyzes the loan against a series of transactions. If the total interest and the total principal
+This calculates if a loan is past due and returns a boolean, with true indicating the loan
+is past due. To do so, it takes a loan (as a Javascript object) with certain parameters and
+analyzes the loan against a series of transactions which are also included in the Javascript
+object. If the total interest and the total principal
 paid on the loan is less than what it should be, the loan is past due.
 
 This function takes the following arguments:
-* loan object (required) - a Javascript object with the following required properties:
-    * PV (required) - the loan amount
-    * NPER (required) - the total number of loan periods
-    * PMT (required) - the payment per loan period
-    * FirstPaymentDate (required) - the date the first payment was required
-    * DeterminationDate (required) - the date the determination is to be made
-    * GraceDays (optional) - the number of days after a payment a borrower has to make a payment
-    * type - (optional) - whether the payment is due at the beginning (1) or the end (0) of a period
-
-* transactions array (required)
+    * loan object (required) - a Javascript object with the following required properties:
+       - InitialLoanAmount - the loan amount due when the loan was originated and closed
+       - OriginationDate - the date when the loan was originated and closed
+       - InterestPrepaymentAmount - the amount paid on the OriginationDate to prepay interest on
+         the loan up to the FirstPaymentDate or before.
+       - FirstPaymentDate - the date the first payment should be received
+       - Rate - the annual interest rate
+       - Term - the term of the loan in months
+       - Payments - the number of payments to be paid during the Term
+       - DeterminationDate - the date when the amount EarnedAmount is calculated
+       - GraceDays (optional) - the number of days after a payment a borrower has to make a payment
+       - transactions array (required), with each element being a Javascript object containing:
+         #amount
  */
 
+calculator.IsLoanPastDue = function(loan, cb){
+   var deferred = Q.defer();
+
+   try{
+      var pastDue = false;
+      var earnedAmount = calculator.EarnedAmount(loan);
+      var amountPaid = 0;
+
+      loan.transactions.forEach(function(tx){
+         amountPaid += tx.amount;
+      });
+      pastDue = amountPaid < earnedAmount;
+      deferred.resolve(pastDue);
+      if (cb) return deferred.promise.nodeify(cb);
+      return pastDue;
+   } catch(err){
+      deferred.reject(err);
+      if (cb) return deferred.promise.nodeify(cb);
+      return err;
+   }
+};
 
 //rounds numbers to decimal places
 Number.prototype.round = function (decimalPlaces) {
