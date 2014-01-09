@@ -16,6 +16,23 @@ var frequency = 'monthly';
 var balloonAmount = 500;
 var balloonPeriod = 18;
 
+var loan = {
+   pastDue: finance.IsLoanPastDue({
+         InitialLoanAmount: amount,
+         OriginationDate: originationDate,
+         InterestPrepaymentAmount: 0,
+         FirstPaymentDate: firstPaymentDate,
+         Term: NPER,
+         Frequency: frequency,
+         Rate: 4,
+         DeterminationDate: new Date(),
+         GraceDays: 10,
+         transactions: []
+      }),
+   firstPaymentDate: finance.FirstPaymentDate(originationDate),
+   amortizationTable: finance.GenAmortizationSchedule(PV, NPER, 7.99, firstPaymentDate, frequency)
+};
+
 //console.log(finance.PVofLumpSum(rate, NPER, FV));
 
 //console.log(finance.PV(rate, NPER, PMT, type));
@@ -67,3 +84,5 @@ console.log(finance.IsLoanPastDue({
    transactions: []
 }));
 */
+
+console.log(finance.NextPaymentDate(loan));
