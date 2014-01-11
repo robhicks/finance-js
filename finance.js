@@ -215,8 +215,6 @@ calculator.CumulativeInterestPaid = function (rate, NPER, PV, start, end, type, 
             : PV * (Math.pow(1 + rate, NPER) - 1);
       };
 
-      console.log(rate, NPER, PV);
-
       var presentValueBeforeStart = start != null
          ? ip(rate, start, PV, type) + PV
          : null;
@@ -719,7 +717,7 @@ calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 
    var deferred = Q.defer();
 
-   dateFunded = dateFunded && dateFunded.constructor === Date ? dateFunded : new Date();
+   dateFunded = dateFunded ? moment(dateFunded) : new Date();
 
    cb = firstPaymentDay && typeof firstPaymentDay === 'function'
       ? firstPaymentDay
@@ -729,7 +727,7 @@ calculator.FirstPaymentDate = function (dateFunded, firstPaymentDay, cb) {
 
    try {
       dateFunded = moment(dateFunded);
-      var result = firstPaymentDay > 1 ? dateFunded.add('M', 2).date(firstPaymentDay)
+      var result = dateFunded.date() > 1 ? dateFunded.add('M', 2).date(firstPaymentDay)
          : dateFunded.add('M', 1).date(1);
 
       result = result.toISOString();
@@ -966,6 +964,156 @@ calculator.NextPaymentDate = function (loan, cb) {
  */
 calculator.PayOffAmount = function(loan){
 
+};
+
+/*
+PaymentsInYear
+--------------
+This calculates the number of payments made in a year.
+It requires:
+   - frequency - monthly, semimonthly, etc.
+*/
+calculator.PaymentsInYear = function(frequency){
+   var result = 12;
+   if(!frequency) result = 12;
+   frequency = frequency.toLowerCase();   
+   if(frequency === 'month') result = 12;
+   if(frequency === 'semimonthly') result = 24;
+   if(frequency === 'bimonthly') result = 6;
+   if(frequency === 'quarterly') result = 4;
+   if(frequency === 'semiannually') result = 2;
+   if(frequency === 'annually') result = 1;
+   return result;
+};
+
+/*
+AccruedInterest
+---------------
+Determines the amount of interest accrued between two dates. Requires:
+   - firstDate
+   - secondDate: should be a date after the first date
+   - rate: annual interest rate
+   - balance at beginning of period
+*/
+calculator.AccruedInterest = function(firstDate, secondDate, rate, balance){
+//   console.log(firstDate, secondDate, rate, balance);
+   firstDate = moment(firstDate);
+   secondDate = moment(secondDate);
+   var daysOfInterest = Math.abs(secondDate.diff(firstDate, 'days'));
+   rate = rate / 100 / 365 * daysOfInterest;
+//   console.log(daysOfInterest, rate);
+   return balance * rate;
+};
+
+/*
+Payment
+-------
+Calculates payment on a loan. Parameters include:
+   - loanAmount
+   - term: months
+   - frequency: 'monthly, semimonthly, bimonthly, quarterly, semiannually, annually'
+   - interestRate: annualized percentage, e.g., 10
+   - interestOnly: if only interest is going to be paid
+   - type: 0 for lagged payments, 1 for up front payments
+*/
+calculator.Payment = function(loanAmount, term, frequency, interestRate, interestOnly, type){
+   var payments = this.Payments(term, frequency);
+   var rate = interestRate / 100 / this.PaymentsInYear(frequency);
+
+   var NPER = type === 0 ? payments : payments + 1;
+
+   var result;
+
+   if (rate === 0){
+      if (NPER > 0 ){
+         result = loanAmount / NPER;
+      } else {
+         result = loanAmount;
+      }
+   } else {
+      if (interestOnly){
+         result = (loanAmount * (rate * Math.pow(1 + rate, NPER)) / (Math.pow(1 + rate, NPER) - 1)) - loanAmount;
+      } else {
+         result = loanAmount * (rate * Math.pow(1 + rate, NPER)) / (Math.pow(1 + rate, NPER) - 1);
+      }
+   }
+   return result.round(2);
+};
+
+/*
+ CalcNumberOfTransactions
+ ------------------------
+ Calculates the number of transactions that can be made between a first date and now.
+ Requires:
+   - fistPaymentDate: the date the first payment is to be made
+   - term: the term in months for the loan
+   - frequency: how often payments are to be made
+*/
+
+calculator.CalcNumberOfTransactions = function(firstPaymentDate, term, frequency){
+   frequency = String(frequency).toLowerCase();
+   firstPaymentDate = moment(firstPaymentDate);
+   var now = moment();
+   var payments = this.Payments(term, frequency);
+   var transactions;
+
+   if(frequency === 'semimonthly') transactions = now.diff(firstPaymentDate, 'months') * 2;
+   if(frequency === 'monthly') transactions = now.diff(firstPaymentDate, 'months');
+   if(frequency === 'bimonthly') transactions = now.diff(firstPaymentDate, 'months') / 2;
+   if(frequency === 'quarterly') transactions = now.diff(firstPaymentDate, 'months') / 3;
+   if(frequency === 'semiannually') transactions = now.diff(firstPaymentDate, 'months') / 6;
+   if(frequency === 'annually') transactions = now.diff(firstPaymentDate, 'months') / 12;
+
+   transactions = transactions < 0 ? 0
+      : transactions > payments ? payments : transactions;
+
+   return transactions;
+};
+
+/*
+CreateTx
+--------
+Creates a transaction.
+   Requires:
+      - paymentNumber: the number of this payment
+      - payment: amortized payment amount
+      - lastPaymentDate: date of the last payment
+      - beginningPrincipal: loan amount on the lastPaymentDate
+      - frequency: how often payments are made
+      - interestRate: annualized interest rate of the loan expressed as a percentage, i.e., 10.1
+   Returns: transaction object containing:
+      - paymentNumber: j + 1,
+      - amount: payment,
+      - receivedDate: date payment is received,
+      - interest: amount of payment allocated to interest
+      - principal: amount of payment allocated to paying down principal
+      - startingPrincipal: beginningPrincipal
+      - loanBalance: principal balance remaining after payment
+*/
+
+calculator.CreateTx = function(paymentNumber, payment, lastPaymentDate, beginningPrincipal, frequency, interestRate){
+   lastPaymentDate = moment(lastPaymentDate);
+
+   var receivedDate;
+   if(frequency === 'semimonthly') receivedDate = moment(lastPaymentDate).add('days', 15);
+   if(frequency === 'monthly') receivedDate = moment(lastPaymentDate).add('months', 1);
+   if(frequency === 'bimonthly') receivedDate = moment(lastPaymentDate).add('months', 2);
+   if(frequency === 'quarterly') receivedDate = moment(lastPaymentDate).add('months', 3);
+   if(frequency === 'semiannually') receivedDate = moment(lastPaymentDate).add('months', 6);
+   if(frequency === 'annually') receivedDate = moment(lastPaymentDate).add('months', 12);
+
+   var interest = this.AccruedInterest(lastPaymentDate.toISOString(), receivedDate.toISOString(), interestRate, beginningPrincipal);
+   var principal = Number(payment) - interest;
+   return {
+      paymentNumber: Number(paymentNumber) + 1,
+      amount: payment,
+      payment: payment,
+      receivedDate: receivedDate.toISOString(),
+      interest:  interest,
+      principal: principal,
+      startingPrincipal: beginningPrincipal,
+      loanBalance: Number(beginningPrincipal) - principal
+   }
 };
 
 //rounds numbers to decimal places

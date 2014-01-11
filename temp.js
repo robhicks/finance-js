@@ -85,4 +85,8 @@ console.log(finance.IsLoanPastDue({
 }));
 */
 
-console.log(finance.NextPaymentDate(loan));
+//console.log(finance.NextPaymentDate(loan));
+
+//console.log(finance.Payment(9000, 360, 'quarterly', 9, false, 0));
+//paymentNumber, payment, lastPaymentDate, beginningPrincipal, frequency, interestRate
+console.log(finance.CreateTx(0, 234.10, '12/01/2008', 9000, 'quarterly', 9));
