@@ -1,44 +1,50 @@
 "use strict";
 
-var Q = require('q');
-var _ = require('lodash');
-var util = require('util');
-var moment = require('moment');
+(function(window){
+  if(typeof module !== 'undefined' && typeof module.exports !== 'undefined'){
+    var when = require('when');
+    var _ = require('lodash');
+    var util = require('util');
+    var moment = require('moment');
+    module.exports = new FinanceJs();
+  } else if (typeof angular !== 'undefined' && typeof angular.module !== 'undefined'){
+    angular.module('FinanceJs', []);
 
-var calculator = {};
+  } else {
+    window.FinanceJs = FinanceJs;
+  }
 
-calculator.self = calculator;
+  function FinanceJs(){
 
-calculator.isFunction = function (func) {
-   return (typeof func === 'function');
-};
+    this.presentValueOfLumpsump = presentValueOfLumpsump;
 
-calculator.isPositiveNumber = function (number) {
-   return (number != null && !isNaN(number) && number > 0);
-};
+  }
 
-calculator.isPositiveInteger = function (number) {
-   return (number != null && !isNaN(number) && number.isInteger() && number > 0);
-};
+  /*
+   presentValueOfLumpsump
+   -----------
+   Calculates the present value of a lump sum received in the future. Params include:
+   * rate (required) - the interest rate per period
+   * NPER (required) - total number of periods
+   * FV (required) - the future value or lump sum to be received
+   */
+  function presentValueOfLumpsump(params, cb){
+    var d = when.defer();
+    if(!params || _.isEmpty(params.rate) ||  _.isEmpty(params.NPER ||  _.isEmpty(params.FV)){
+      d.reject(new Error('params object not provided or params does not include rate, NPER and FV'))
+    } else {
+      var result = FV / Math.pow(1 + rate, NPER);
+      d.resolve(result);
+    }
+    if(cb) return result;
+    return d.promise;
+  }
 
-calculator.isProperType = function (type) {
-   return (type != null && !isNaN(type) && (type === 0 || type === 1));
-};
+})();
 
-calculator.isRequiredPositiveNumber = function (number) {
-   return (number != null && calculator.isPositiveNumber(number));
-};
 
-calculator.isRequiredPositiveInteger = function (number) {
-   return (number != null && calculator.isPositiveInteger(number));
-};
 
-calculator.validationErrors = [
-   ' must be a positive number',
-   ' must be a positive integer',
-   ' must be 0 or 1',
-   ' must be a function'
-];
+
 
 /*
  PVofLumpSum
