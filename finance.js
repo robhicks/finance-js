@@ -229,20 +229,19 @@
       var interestRate = Number(loan.interestRate);
       var frequency = Number(loan.frequency);
       var type = loan.type && !_.isEmpty(loan.type) ? Number(loan.type) : 0;
-      var currDate = loan.firstPaymentDate && !_.isEmpty(loan.firstPaymentDate) && firstPaymentDate.constructor === Date
-          ? moment(firstPaymentDate) : moment();
+      var currDate = moment(this.firstPaymentDate(loan.closingDate));
       var dateOffset = 1;
       var lastPaymentDate = currDate.clone().add('M', term);
       var paymentDay = currDate.date();
       var payments = 0;
-      var tempDate, tempDay, balloonPeriod, balloonAmount, payment, balance;
-      var interestRate = interestRate / 100;
       var semimonthly = false;
       var balloonDate = loan.balloonDate ? moment(loan.balloonDate) : null;
       var schedule = [];
       var totalInterest = 0.0;
       var currInterest = 0;
       var currPrinciple = 0;
+      var tempDate, tempDay, balloonPeriod, balloonAmount, payment, balance;
+      interestRate = interestRate / 100;
 
       if (!frequency || frequency === 'monthly') {
         payments = term;
@@ -300,7 +299,6 @@
       }
 
       loan.payments = payments;
-      loan.interestRate
       payment = this.paymentAmount(loan);
       balance = loanAmount;
 
