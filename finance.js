@@ -95,7 +95,7 @@
       if (callback) return d.promise.nodeify(callback);
       return payments;
     }
-  };
+  }
 
   /*
    paymentAmount
@@ -150,7 +150,7 @@
       if (callback) return d.promise.nodeify(callback);
       return err;
     }
-  };
+  }
 
   /*
    firstPaymentDate
@@ -160,19 +160,19 @@
    the loan was funded (origination or funding date).
 
    This function takes the following arguments:
-   * dateFunded (required) - the funding or origination date of the loan
+   * closingDate (required) - the funding or origination date of the loan
    * firstPaymentDay (optional) - desired day of the month for the payment - defaults to the first day
    * cb (optional) - optional CommonJS (Node style) callback
    */
   function firstPaymentDate(loan, cb) {
     var d = Q.defer();
-    var dateFunded = loan.dateFunded ? moment(loan.dateFunded) : new Date();
+    var closingDate = loan.closingDate ? moment(loan.closingDate) : new Date();
     var firstPaymentDay = loan.firstPaymentDay ? loan.firstPaymentDay : 1;
 
     try {
-      dateFunded = moment(dateFunded);
-      var result = dateFunded.date() > 1 ? dateFunded.add('M', 2).date(firstPaymentDay)
-          : dateFunded.add('M', 1).date(1);
+      closingDate = moment(closingDate);
+      var result = closingDate.date() > 1 ? closingDate.add('M', 2).date(firstPaymentDay)
+          : closingDate.add('M', 1).date(1);
 
       result = result.toISOString();
 
@@ -185,7 +185,7 @@
       if (cb) return d.promise.nodeify(cb);
       return null;
     }
-  };
+  }
 
   /*
    generateAmortizationTable
@@ -343,7 +343,7 @@
       if (callback) return d.promise.nodeify(callback);
       return schedule;
     }
-  };
+  }
 
   /*
    isLoanPastDue
@@ -460,10 +460,10 @@
 
       var rate = Number(loan.interestRate);
       var NPER = Number(loan.term);
-      PV = Number(loan.loanAmount);
-      start = start != null ? Number(params.startPeriod) : null;
-      end = end != null ? Number(params.endPeriod) : null;
-      type = type != null ? Number(loan.type) : null;
+      var PV = Number(loan.loanAmount);
+      var start = params.startPeriod != null ? Number(params.startPeriod) : null;
+      var end = params.endPeriod != null ? Number(params.endPeriod) : null;
+      var type = type != null ? Number(loan.type) : null;
 
       var ip = function (rate, NPER, PV, type) {
         return type && type === 1
@@ -488,7 +488,7 @@
       if (callback) return deferred.promise.nodeify(callback);
       return err;
     }
-  };
+  }
 
 })();
 
