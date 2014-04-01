@@ -166,7 +166,7 @@
    */
   function firstPaymentDate(loan, cb) {
     var d = Q.defer();
-    var closingDate = loan.closingDate ? moment(loan.closingDate) : new Date();
+    var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
     var firstPaymentDay = loan.firstPaymentDay ? loan.firstPaymentDay : 1;
 
     try {
@@ -229,7 +229,7 @@
       var interestRate = Number(loan.interestRate);
       var frequency = Number(loan.frequency);
       var type = loan.type && !_.isEmpty(loan.type) ? Number(loan.type) : 0;
-      var currDate = moment(this.firstPaymentDate(loan.closingDate));
+      var currDate = moment(this.firstPaymentDate(loan));
       var dateOffset = 1;
       var lastPaymentDate = currDate.clone().add('M', term);
       var paymentDay = currDate.date();
