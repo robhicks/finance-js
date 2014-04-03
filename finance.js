@@ -350,7 +350,7 @@
         date = moment(pmt.date);
         if(date.isBefore(dateLastPaymentShouldHaveBeenMade)) earned += Number(pmt.payment);
       });
-      loan.isLoanPastDue = paid < earned;
+      loan.pastDue = paid < earned;
       d.resolve(loan);
     }
     return d.promise;
