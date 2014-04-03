@@ -20,10 +20,13 @@
     this.numberOfPayments = numberOfPayments;
     this.paymentAmount = paymentAmount;
     this.firstPaymentDate = firstPaymentDate;
-    this.generateAmortizationTable = generateAmortizationTable;
+    this.addAmorizationTable = addAmorizationTable;
     this.isLoanPastDue = isLoanPastDue;
     this.earnedAmount = earnedAmount;
     this.cumulativeInterestPaid = cumulativeInterestPaid;
+    this.nextPaymentDate = nextPaymentDate;
+    this.dateLastPaymentShouldHaveBeenMade = dateLastPaymentShouldHaveBeenMade;
+    this.dateLastPaymentWasReceived = dateLastPaymentWasReceived;
 
   }
 
@@ -66,34 +69,32 @@
    * callback (optional) - function of CommonJs/NodeJs return, e.g., function(err, result)
 
    */
-  function numberOfPayments(loan, callback) {
+  function numberOfPayments(loan) {
     var d = Q.defer();
-    var payments;
     if (!loan || !loan.term || !loan.frequency) {
       d.reject(new Error('improper parameters'));
     } else {
       var frequency = loan.frequency.toLowerCase();
       var term = loan.term ? Number(loan.term) : 0;
 
-      if (frequency == null || frequency === 'monthly') {
-        payments = term;
-      } else if (frequency === 'semimonthly') {
-        (payments = term * 2).toInteger();
+      if (frequency === 'semimonthly') {
+        (loan.payments = parseInt(term * 2));
       } else if (frequency === 'bimonthly') {
-        payments = (term / 2).toInteger();
+        loan.payments = (parseInt(term / 2));
       } else if (frequency === 'quarterly') {
-        payments = (term / 4).toInteger();
+        loan.payments = (parseInt(term / 4));
       } else if (frequency === 'semiannually') {
-        payments = (term / 6).toInteger();
+        loan.payments = (parseInt(term / 6));
       } else if (frequency === 'annually') {
-        payments = (term / 12).toInteger();
+        loan.payments = (parseInt(term / 12));
       } else if (frequency === 'none' || frequency === 'one') {
-        payments = 1;
+        loan.payments = 1;
+      } else {
+        loan.payments = term;
       }
-
-      d.resolve(payments);
-      if (callback) return d.promise.nodeify(callback);
-      return payments;
+      
+      d.resolve(loan);
+      return d.promise;
     }
   }
 
@@ -107,48 +108,33 @@
    * interestOnly (optional) - boolean indicating if the loan is an interest only loan
    * type (optional) - whether the payment is made at the beginning (1) or the end (0) of a period
    */
-  function paymentAmount(loan, callback) {
+  function paymentAmount(loan) {
     var d = Q.defer();
+
     if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate) {
       d.reject(new Error('required parameters not provided'));
     } else {
-
-    }
-    try {
       var interestRate = loan.interestRate ? Number(loan.interestRate) / 1200 : 0;
       var term = loan.term ? Number(loan.term) : 0;
       var loanAmount = loan.loanAmount ? Number(loan.loanAmount) : 0;
       var type = loan.type != null ? Number(loan.type) : 0;
       var interestOnly = loan.interestOnly ? Boolean(loan.interestOnly) : false;
 
-      term = type === 0 ? term : term + 1;
-
-      // If the interest interestRate is 0, return loanAmount / term
-      // If the interest interestRate is greater than 0 and the loan is an interest only loan, return
-
-      var result;
-
       if (interestRate === 0) {
         if (term > 0) {
-          result = loanAmount / term;
+          loan.paymentAmount = loanAmount / term;
         } else {
-          result = 0;
+          loan.paymentAmount = 0;
         }
       } else {
         if (interestOnly) {
-          result = (loanAmount * (interestRate * Math.pow(1 + interestRate, term)) / (Math.pow(1 + interestRate, term) - 1)) - loanAmount;
+          loan.paymentAmount = (loanAmount * (interestRate * Math.pow(1 + interestRate, term)) / (Math.pow(1 + interestRate, term) - 1)) - loanAmount;
         } else {
-          result = loanAmount * (interestRate * Math.pow(1 + interestRate, term)) / (Math.pow(1 + interestRate, term) - 1);
+          loan.paymentAmount = loanAmount * (interestRate * Math.pow(1 + interestRate, term)) / (Math.pow(1 + interestRate, term) - 1);
         }
       }
-
-      d.resolve(result);
-      if (callback) return d.promise.nodeify(callback);
-      return result;
-    } catch (err) {
-      d.reject(err);
-      if (callback) return d.promise.nodeify(callback);
-      return err;
+      d.resolve(loan);
+      return d.promise;
     }
   }
 
@@ -164,27 +150,21 @@
    * firstPaymentDay (optional) - desired day of the month for the payment - defaults to the first day
    * cb (optional) - optional CommonJS (Node style) callback
    */
-  function firstPaymentDate(loan, cb) {
+  function firstPaymentDate(loan) {
     var d = Q.defer();
-    var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
-    var firstPaymentDay = loan.firstPaymentDay ? loan.firstPaymentDay : 1;
+    if(!loan.closingDate){
+      d.reject(new Error('closing date required to determine firstPaymentDate'));
+    } else {
+      var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
+      console.log('closingDate', loan.closingDate);
+      var firstPaymentDay = !_.isEmpty(loan.firstPaymentDay) ? loan.firstPaymentDay : 1;
 
-    try {
-      closingDate = moment(closingDate);
-      var result = closingDate.date() > 1 ? closingDate.add('M', 2).date(firstPaymentDay)
+      loan.firstPaymentDate = closingDate.date() > 1 ? closingDate.add('M', 2).date(firstPaymentDay)
           : closingDate.add('M', 1).date(1);
-
-      result = result.toISOString();
-
-      d.resolve(result);
-      if (cb) return d.promise.nodeify(cb);
-      return  result;
-
-    } catch (err) {
-      d.reject(new Error(err));
-      if (cb) return d.promise.nodeify(cb);
-      return null;
+      loan.firstPaymentDate = loan.firstPaymentDate.toISOString();
+      d.resolve(loan);
     }
+    return d.promise;
   }
 
   /*
@@ -219,9 +199,9 @@
    * date: the date of the payment for the period
 
    */
-  function generateAmortizationTable(loan, callback) {
+  function addAmorizationTable(loan) {
     var d = Q.defer();
-    if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate) {
+    if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate || !loan.firstPaymentDate || !loan.paymentAmount) {
       d.reject(new Error('parameters are incorrect'));
     } else {
       var loanAmount = Number(loan.loanAmount);
@@ -229,7 +209,7 @@
       var interestRate = Number(loan.interestRate);
       var frequency = Number(loan.frequency);
       var type = loan.type && !_.isEmpty(loan.type) ? Number(loan.type) : 0;
-      var currDate = moment(this.firstPaymentDate(loan));
+      var currDate = moment(loan.firstPaymentDate);
       var dateOffset = 1;
       var lastPaymentDate = currDate.clone().add('M', term);
       var paymentDay = currDate.date();
@@ -248,24 +228,24 @@
         interestRate = interestRate / 12;
         dateOffset = 1;
       } else if (frequency.toLowerCase() === 'semimonthly') {
-        (payments = term * 2).toInteger();
+        (payments = term * 2);
         interestRate = interestRate / 12 / 2;
         semimonthly = true;
         dateOffset = parseInt(365.25 / 12 / 2);
       } else if (frequency.toLowerCase() === 'bimonthly') {
-        payments = (term / 2).toInteger();
+        payments = (term / 2);
         interestRate = interestRate / 12 * 2;
         dateOffset = 2;
       } else if (frequency.toLowerCase() === 'quarterly') {
-        payments = (term / 4).toInteger();
+        payments = (term / 4);
         interestRate = interestRate / 12 * 4;
         dateOffset = 4;
       } else if (frequency.toLowerCase() === 'semiannually') {
-        payments = (term / 6).toInteger();
+        payments = (term / 6);
         interestRate = interestRate / 12 * 6;
         dateOffset = 6;
       } else if (frequency.toLowerCase() === 'annually') {
-        payments = (term / 12).toInteger();
+        payments = (term / 12);
         interestRate = interestRate / 12 * 12;
         dateOffset = 12;
       } else if (frequency.toLowerCase() === 'none' || frequency.toLowerCase() === 'one') {
@@ -299,7 +279,7 @@
       }
 
       loan.payments = payments;
-      payment = this.paymentAmount(loan);
+      payment = loan.paymentAmount;
       balance = loanAmount;
 
       for (var i = 0; i < payments; i++) {
@@ -336,53 +316,46 @@
           currDate.add('M', dateOffset);
         }
       }
+      loan.amortizationTable = schedule;
+      console.log(loan.amortizationTable);
 
-      d.resolve(schedule);
-      if (callback) return d.promise.nodeify(callback);
-      return schedule;
+      d.resolve(loan);
     }
+    return d.promise;
   }
 
-  /*
-   isLoanPastDue
-   -------
-   This calculates if a loan is past due and returns a boolean, with true indicating the loan
-   is past due. To do so, it takes a loan (as a Javascript object) with certain parameters and
-   analyzes the loan against a series of transactions which are also included in the Javascript
-   object. If the total interest and the total principal
-   paid on the loan is less than what it should be, the loan is past due.
-
-   This function takes the following arguments:
-   * loan object (required) - a Javascript object with the following required properties:
-   - InitialLoanAmount - the loan amount due when the loan was originated and closed
-   - OriginationDate - the date when the loan was originated and closed
-   - InterestPrepaymentAmount - the amount paid on the OriginationDate to prepay interest on
-   the loan up to the FirstPaymentDate or before.
-   - FirstPaymentDate - the date the first payment should be received
-   - Rate - the annual interest rate
-   - Term - the term of the loan in months
-   - Payments - the number of payments to be paid during the Term
-   - DeterminationDate - the date when the amount EarnedAmount is calculated
-   - GraceDays (optional) - the number of days after a payment a borrower has to make a payment
-   - transactions array (required), with each element being a Javascript object containing:
-   #amount
+  /**
+   * isLoanPastDue
+   * @param loan
+   * - amortizationTable - an array of transactions
+   * - transactions - a list of payment transactions
+   * - dateLastPaymentShouldHaveBeenMade - obvious
+   * - dateLastPaymentWasReceived - obvious
+   * @returns {promise|Q.promise}
+   * compares amount of payments that have been received against those that
+   * should have been received.
    */
-
-  function isLoanPastDue(loan, callback) {
-    var deferred = Q.defer();
-
-    var pastDue = false;
-    var earnedAmount = this.earnedAmount(loan);
-    var amountPaid = 0;
-
-    loan.transactions.forEach(function (tx) {
-      amountPaid += tx.amount;
-    });
-    pastDue = amountPaid < earnedAmount;
-    deferred.resolve(pastDue);
-
-    if (cb) return deferred.promise.nodeify(cb);
-    return deferred.promise;
+  function isLoanPastDue(loan) {
+    var d = Q.defer();
+    var paid = 0;
+    var earned = 0;
+    var date;
+    if(!loan || !loan.amortizationTable || !loan.transactions || !loan.dateLastPaymentShouldHaveBeenMade){
+      d.reject('required isLoanPastDue parameters not provided')
+    } else {
+      var dateLastPaymentShouldHaveBeenMade = moment(loan.dateLastPaymentShouldHaveBeenMade);
+      loan.transactions.forEach(function(tx){
+        console.log(tx);
+        paid += Number(tx.amount);
+      });
+      loan.amortizationTable.forEach(function(pmt){
+        date = moment(pmt.date);
+        if(date.isBefore(dateLastPaymentShouldHaveBeenMade)) earned += Number(pmt.payment);
+      });
+      loan.isLoanPastDue = paid < earned;
+      d.resolve(loan);
+    }
+    return d.promise;
   }
 
   /*
@@ -391,47 +364,58 @@
    This function calculates the amount that should have been received for a loan at a specified
    date in the future.
 
-   This function takes a Javascript object and an optional callback. The Javascript object should
+   This function takes a Javascript object. The Javascript object should
    include the following:
 
-   * InitialLoanAmount - the loan amount due when the loan was originated and closed
-   * OriginationDate - the date when the loan was originated and closed
-   * InterestPrepaymentAmount - the amount paid on the OriginationDate to prepay interest on
+   * loanAmount - the loan amount due when the loan was originated and closed
+   * closingDate - the date when the loan was originated and closed
+   * prepaidInterest (optional) - the amount paid on the OriginationDate to prepay interest on
    the loan up to the FirstPaymentDate or before.
-   * FirstPaymentDate - the date the first payment should be received
-   * Rate - the annual interest rate
-   * Term - the term of the loan in months
-   * Payments - the number of payments to be paid during the Term
-   * DeterminationDate - the date when the amount EarnedAmount is calculated
+   * firstPaymentDate - the date the first payment should have been received
+   * interestRate - the annual interest rate
+   * paymentAmount - the amount of the periodic payments
+   * term - the term of the loan in months
+   * payments - the number of payments to be paid during the Term
+   * determinationDate - the date when the earnedAmount is calculated
+   * frequency (optional) - the periodicity of the loan, e.g., 'monthly', 'quarterly', etc.
    */
 
-  function earnedAmount(loan, cb) {
+  function earnedAmount(loan) {
     var deferred = Q.defer();
+    if(!loan || !loan.loanAmount || !loan.closingDate
+        || !loan.firstPaymentDate || !loan.interestRate || !loan.term
+        || !loan.payments || !loan.determinationDate || !loan.paymentAmount){
+      deferred.reject(new Error('earnedAmount cannot be calculated without required parameters'));
+    } else {
 
-    var InitialLoanAmount = loan.loanAmount || 0;
-    var OriginationDate = moment(loan.dateOpened) || moment();
-    var FirstPaymentDate = moment(loan.firstPaymentDate) || moment();
-    var Term = loan.term || 0;
-    var Frequency = loan.Frequency || 'monthly';
-    var Payments = this.numberOfPayments(loan);
-    var Rate = loan.Rate || 0;
-    var DeterminationDate = moment(loan.DeterminationDate) || moment();
+    }
+
+    var InitialLoanAmount = Number(loan.loanAmount);
+    var OriginationDate = moment(loan.closingDate);
+    var FirstPaymentDate = moment(loan.firstPaymentDate);
+    var Term = loan.term;
+    var Frequency = loan.frequency ? loan.frequency : 'monthly';
+    var Payments = Number(loan.payments);
+    var Rate = Number(loan.interestRate);
+    var DeterminationDate = moment(loan.determinationDate);
     var daysBeforeFirstPayment = FirstPaymentDate.diff(OriginationDate, 'days');
     var periodicRate = Rate / 100 / (12 * Payments / Term);
     var dailyRate = Rate / 100 / 365;
-    var InterestPrepaymentAmount = loan.interestPrepaymentAmount || 0;
+    var InterestPrepaymentAmount = loan.prepaidInterest ? Number(loan.prepaidInterest) : 0;
     var interestEarnedBeforeFirstPayment = daysBeforeFirstPayment * InitialLoanAmount * dailyRate - InterestPrepaymentAmount;
     var numberOfMonths = DeterminationDate.diff(FirstPaymentDate, 'months');
     var numberOfExtraDays = DeterminationDate.diff(FirstPaymentDate, 'days') - numberOfMonths * 30;
-    var Payment = this.paymentAmount(loan);
+    var Payment = Number(loan.paymentAmount);
+    cumulativeInterestPaid(loan)
     var cumInterestPaid = this.cumulativeInterestPaid(loan, Payments, InitialLoanAmount);
 
     var remainingBalance = calculator.RemainingBalance(InitialLoanAmount, periodicRate, numberOfMonths, Payment);
     var interestEarnedAfterLastPayment = numberOfExtraDays * remainingBalance * dailyRate;
     var totalAmountEarned = interestEarnedBeforeFirstPayment + cumInterestPaid + InitialLoanAmount - remainingBalance + interestEarnedAfterLastPayment;
+    
     deferred.resolve(totalAmountEarned);
-    if (cb) return deferred.promise.nodeify(cb);
-    return totalAmountEarned;
+
+    return deferred.promise;
 
   }
 
@@ -488,5 +472,101 @@
     }
   }
 
+  /**
+   * nextPaymentDate
+   * @param loan
+   * - dateLastPaymentWasReceived
+   * - amortizationTable
+   * @returns {promise|Q.promise}
+   */
+  function nextPaymentDate(loan){
+    var d = Q.defer();
+    var date;
+    var item;
+    var result;
+    if(!loan || !loan.dateLastPaymentWasReceived || !loan.amortizationTable){
+      d.reject('required parameters for nextPaymentDue not provided');
+    } else {
+      var dateLastPaymentWasReceived = moment(loan.dateLastPaymentWasReceived);
+      for(var i = 0, len = loan.amortizationTable.length; i < len; i++){
+        item = loan.amortizationTable[i];
+        date = moment(item.date);
+        if(date.isAfter(dateLastPaymentWasReceived)){
+          result = item.date;
+          break;
+        }
+      }
+    }
+    loan.nextPaymentDate = result;
+    d.resolve(loan);
+    return d.promise;
+  }
+
+  /**
+   * Calculates the last date a payment should have been
+   * @param loan, which must include
+   *  - amortizationTable - a loan amortization table with the expected payment dates
+   *  - daysUntilLate (optional) - the grace days for the loan - defaults to 0
+   *  - determinationDate (optional) - the date the determination is made, defaults to today
+   */
+  function dateLastPaymentShouldHaveBeenMade(loan){
+    var d = Q.defer();
+    var result;
+    if(!loan || !loan.amortizationTable){
+      d.reject(new Error('required dateLastPaymentShouldHaveBeenMade not provided'));
+    } else {
+      var determinationDate = loan.determinationDate ? moment(loan.determinationDate) : moment();
+      var daysUntilLate = loan.daysUntilLate ? Number(loan.daysUntilLate) : 0;
+      determinationDate.add('days', daysUntilLate);
+      loan.amortizationTable.forEach(function(payment){
+        var paymentDate = moment(payment.date);
+        if(paymentDate.isBefore(determinationDate)) result = paymentDate.toISOString();
+      });
+      loan.dateLastPaymentShouldHaveBeenMade = result;
+      d.resolve(loan)
+    }
+    return d.promise;
+  }
+
+  /**
+   * dateLastPaymentWasReceived
+   * @param loan
+   * - transactions
+   */
+  function dateLastPaymentWasReceived(loan){
+    var d = Q.defer();
+    var result = null;
+    if(!loan || !loan.transactions){
+      d.reject('required dateLastPaymentWasReceived not provided');
+    } else {
+      loan.transactions.forEach(function(tx){
+        result = tx.receivedDate;
+      });
+      if(result){
+        loan.dateLastPaymentWasReceived = result;
+        d.resolve(loan);
+      } else d.reject('no transactions to determine dateLastPaymentWasReceived');
+    }
+    return d.promise;
+  }
+
 })();
 
+function amountPaid(loan){
+  var paid = 0;
+  loan.transactions.forEach(function(tx){
+    paid += tx.paymentAmount;
+  });
+  return paid;
+}
+
+function amountEarned(loan){
+  var dateLastPaymentShouldHaveBeenMade = moment(loan.dateLastPaymentShouldHaveBeenMade);
+  var date;
+  var sum = 0;
+  loan.amortizationTable.forEach(function(pmt){
+    date = moment(pmt.date)
+    if(date.isBefore(dateLastPaymentShouldHaveBeenMade)) sum += pmt.payment;
+  });
+  return sum;
+}

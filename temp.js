@@ -2,31 +2,49 @@
 
 var finance = require('./finance');
 
-var amount = 5000;
-var NPER = 12;
-var rate = 7.99 / 1200;
-var PMT = 100;
-var type = 0;
-var PV = amount;
-var FV = amount;
-var closingDate = new Date(2011, 9, 4);
-var balloonDate = new Date(2014, 10, 4);
-var frequency = 'monthly';
-var balloonAmount = 500;
-var balloonPeriod = 18;
-
 var loan = {
-  loanAmount: amount,
-  closingDate: closingDate,
+  loanAmount: 5000,
+  closingDate: new Date(2011, 9, 4),
   prepaidInterest: 0,
-  term: NPER,
-  frequency: frequency,
+  term: 60,
+  frequency: 'monthly',
   interestRate: 4,
   determinationDate: new Date(),
-  graceDays: 10
+  daysUntilLate: 10,
+  transactions: [
+    {paymentNumber: 1, receivedDate: new Date(2012, 0, 1), amount: 45.88},
+    {paymentNumber: 2, receivedDate: new Date(2012, 1, 1), amount: 45.88},
+    {paymentNumber: 3, receivedDate: new Date(2012, 2, 1), amount: 45.88}
+  ]
 };
 
-console.log("firstPaymentDate", finance.firstPaymentDate(loan));
-console.log("numberOfPayments", finance.numberOfPayments(loan));
-console.log("paymentAmount", finance.paymentAmount(loan));
-console.log("generateAmortizationTable", finance.generateAmortizationTable(loan));
+finance.paymentAmount(loan)
+    .then(finance.numberOfPayments)
+    .then(finance.firstPaymentDate)
+    .then(finance.addAmorizationTable)
+    .then(finance.dateLastPaymentShouldHaveBeenMade)
+    .then(finance.dateLastPaymentWasReceived)
+    .then(finance.isLoanPastDue)
+    .then(finance.nextPaymentDate)
+//    .then(finance.nextPaymentDue)
+    .then(success, failure);
+//    .then(finance.paymentAmount)
+//    .done(function(result){
+//      console.log(result);
+//    },
+//    function(err){
+//      console.log(err);
+//    });
+
+function success(result){
+  console.log(result);
+}
+
+function failure(err){
+  console.error(err);
+}
+//console.log("firstPaymentDate", finance.firstPaymentDate(loan));
+//console.log("numberOfPayments", finance.numberOfPayments(loan));
+//console.log("paymentAmount", finance.paymentAmount(loan));
+//console.log("nextPaymentDue", finance.nextPaymentDue(loan));
+//console.log("generateAmortizationTable", finance.generateAmortizationTable(loan));
