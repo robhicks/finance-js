@@ -317,8 +317,6 @@
         }
       }
       loan.amortizationTable = schedule;
-      console.log(loan.amortizationTable);
-
       d.resolve(loan);
     }
     return d.promise;
