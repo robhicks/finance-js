@@ -12,9 +12,9 @@ var loan = {
   determinationDate: new Date(),
   daysUntilLate: 10,
   transactions: [
-    {paymentNumber: 1, receivedDate: new Date(2012, 0, 1), amount: 45.88},
-    {paymentNumber: 2, receivedDate: new Date(2012, 1, 1), amount: 45.88},
-    {paymentNumber: 3, receivedDate: new Date(2012, 2, 1), amount: 45.88}
+    {paymentNumber: 1, receivedDate: new Date(2012, 0, 1), amount: 45.88, principal: 25.66},
+    {paymentNumber: 2, receivedDate: new Date(2012, 1, 1), amount: 45.88, principal: 25.66},
+    {paymentNumber: 3, receivedDate: new Date(2012, 2, 1), amount: 45.88, principal: 25.66}
   ]
 };
 
@@ -26,15 +26,8 @@ finance.paymentAmount(loan)
     .then(finance.dateLastPaymentWasReceived)
     .then(finance.isLoanPastDue)
     .then(finance.nextPaymentDate)
-//    .then(finance.nextPaymentDue)
+    .then(finance.outstandingPrincipal)
     .then(success, failure);
-//    .then(finance.paymentAmount)
-//    .done(function(result){
-//      console.log(result);
-//    },
-//    function(err){
-//      console.log(err);
-//    });
 
 function success(result){
   console.log(result);

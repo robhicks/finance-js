@@ -27,6 +27,7 @@
     this.nextPaymentDate = nextPaymentDate;
     this.dateLastPaymentShouldHaveBeenMade = dateLastPaymentShouldHaveBeenMade;
     this.dateLastPaymentWasReceived = dateLastPaymentWasReceived;
+    this.outstandingPrincipal = outstandingPrincipal;
 
   }
 
@@ -546,6 +547,29 @@
     return d.promise;
   }
 
+  /**
+   *
+   * @param loan
+   * - transactions
+   * - loanAmount
+   * @returns {promise|Q.promise}
+   */
+  function outstandingPrincipal(loan){
+    var d = Q.defer();
+    var sumOfPayments = 0;
+    if(!loan || !loan.loanAmount || !loan.transactions){
+      d.reject(new Error('required parameters for outstandingPrincipal not provided'))
+    } else {
+      loan.transactions.forEach(function(tx){
+        console.log(tx.principal);
+        sumOfPayments += !_.isEmpty(tx.principal) ? Number(tx.principal) : 0;
+      });
+      loan.loanBalance = loan.loanAmount - sumOfPayments;
+      d.resolve(loan);
+    }
+    return d.promise;
+  }
+
 })();
 
 function amountPaid(loan){
@@ -566,3 +590,4 @@ function amountEarned(loan){
   });
   return sum;
 }
+
