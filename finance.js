@@ -156,7 +156,6 @@
       d.reject(new Error('closing date required to determine firstPaymentDate'));
     } else {
       var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
-      console.log('closingDate', loan.closingDate);
       var firstPaymentDay = !_.isEmpty(loan.firstPaymentDay) ? loan.firstPaymentDay : 1;
 
       loan.firstPaymentDate = closingDate.date() > 1 ? closingDate.add('M', 2).date(firstPaymentDay)
@@ -343,7 +342,6 @@
     } else {
       var dateLastPaymentShouldHaveBeenMade = moment(loan.dateLastPaymentShouldHaveBeenMade);
       loan.transactions.forEach(function(tx){
-        console.log(tx);
         paid += Number(tx.amount);
       });
       loan.amortizationTable.forEach(function(pmt){
