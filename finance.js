@@ -28,6 +28,7 @@
     this.dateLastPaymentShouldHaveBeenMade = dateLastPaymentShouldHaveBeenMade;
     this.dateLastPaymentWasReceived = dateLastPaymentWasReceived;
     this.outstandingPrincipal = outstandingPrincipal;
+    this.aggregateLateFees = aggregateLateFees;
 
   }
 
@@ -561,12 +562,74 @@
       d.reject(new Error('required parameters for outstandingPrincipal not provided'))
     } else {
       loan.transactions.forEach(function(tx){
-        console.log(tx.principal);
         sumOfPayments += !_.isEmpty(tx.principal) ? Number(tx.principal) : 0;
       });
       loan.loanBalance = loan.loanAmount - sumOfPayments;
       d.resolve(loan);
     }
+    return d.promise;
+  }
+
+  /**
+   *
+   * @param loan
+   * - transactions
+   * - lateChargeType (required) - can be 'none', 'lateChargeFixed', or 'lateChargePercent'
+   * - lateChargePercent (optional) - if largeChargeType == lateChargePercent this the
+   *    percent of the monthly payment that is charged as a late fee
+   * - lateChargeMin$ (optional) - low er bounding for lateChargePercent
+   * - lateChargeMax$ (optional) - upper bounding for lateChargePercent
+   * - lateChargeFixed (optional) - fixed late charge
+   * - daysUntilLate (required) - the number of days after payment is due that user is given without late fee
+   * - amortizationTable (required)
+   * - paymentAmount (required)
+   * - transactions
+   * @returns {promise|Q.promise}
+   */
+  function aggregateLateFees(loan){
+    var d = Q.defer();
+    var datePaymentShouldHaveBeenReceived;
+    var datePaymentWasReceived;
+    var determinationDate = moment();
+    var payment;
+    var tx;
+    var lateFee = 0;
+
+    loan.aggregateLateFees = loan.aggregateLateFees || 0;
+
+    if (!loan || !loan.lateChargeType || !loan.daysUntilLate || !loan.amortizationTable || !loan.transactions){
+      d.reject(new Error('required parameters for aggregateLateFees not provided'));
+    } else {
+      if (loan.lateChargeType === 'lateChargeFixed'){
+        if (loan.lateChargeFixed){
+          lateFee = loan.lateChargeFixed;
+        }
+      } else if(loan.lateChargeType === 'lateChargePercent') {
+        if (loan.lateChargePercent) {
+          lateFee = loan.paymentAmount * loan.lateChargePercent / 100;
+          if (loan.lateChargeMin$ && lateFee < loan.lateChargeMin$){
+            lateFee = loan.lateChargeMin$;
+          }
+          if (loan.lateChargeMax$ && lateFee > loan.lateChargeMax$){
+            lateFee = loan.lateChargeMax$;
+          }
+        }
+      }
+
+      for (var i = 0, l1 = loan.amortizationTable.length; i < l1; i++){
+        payment = loan.amortizationTable[i];
+        datePaymentShouldHaveBeenReceived = moment(payment.date).add('days', loan.daysUntilLate);
+        if (datePaymentShouldHaveBeenReceived.isBefore(determinationDate)){
+          loan.aggregateLateFees += lateFee;
+        }
+      }
+      for (var j = 0, l2 = loan.transactions.length; j < l2; j++ ){
+        tx = loan.transactions[j];
+        datePaymentWasReceived = moment(tx.receivedDate);
+        if (datePaymentWasReceived.isBefore(determinationDate)) loan.aggregateLateFees -= lateFee;
+      }
+    }
+    d.resolve(loan);
     return d.promise;
   }
 
