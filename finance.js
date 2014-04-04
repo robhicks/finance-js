@@ -595,7 +595,7 @@
     var tx;
     var lateFee = 0;
 
-    loan.aggregateLateFees = loan.aggregateLateFees || 0;
+    loan.aggregateLateFees = 0;
 
     if (!loan || !loan.lateChargeType || !loan.daysUntilLate || !loan.amortizationTable || !loan.transactions){
       d.reject(new Error('required parameters for aggregateLateFees not provided'));
