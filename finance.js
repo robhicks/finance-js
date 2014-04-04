@@ -626,7 +626,10 @@
       for (var j = 0, l2 = loan.transactions.length; j < l2; j++ ){
         tx = loan.transactions[j];
         datePaymentWasReceived = moment(tx.receivedDate);
-        if (datePaymentWasReceived.isBefore(determinationDate)) loan.aggregateLateFees -= lateFee;
+        if (datePaymentWasReceived.isBefore(determinationDate)){
+          tx.lateFees = lateFee;
+          loan.aggregateLateFees -= lateFee;
+        }
       }
     }
     d.resolve(loan);
