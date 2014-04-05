@@ -1,22 +1,24 @@
 "use strict";
 
-(function (window) {
+var Q;
+
+(function () {
   if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    var Q = require('q');
+    Q = require('q');
     var _ = require('lodash');
-    var util = require('util');
     var moment = require('moment');
     module.exports = new FinanceJs();
   } else if (typeof angular !== 'undefined' && typeof angular.module !== 'undefined') {
-    angular.module('FinanceJs', []);
-
-  } else {
-    window.FinanceJs = FinanceJs;
+    angular.module('FinanceJs', [])
+      .service('FinanceService', ['$q', function($q){
+        Q = $q;
+        return new FinanceJs();
+      }]);
   }
 
   function FinanceJs() {
 
-    this.presentValueOfLumpsump = presentValueOfLumpsump;
+    this.presentValueOfLumpSum = presentValueOfLumpSum;
     this.numberOfPayments = numberOfPayments;
     this.paymentAmount = paymentAmount;
     this.firstPaymentDate = firstPaymentDate;
@@ -34,14 +36,14 @@
   }
 
   /*
-   presentValueOfLumpsump
+   presentValueOfLumpSum
    -----------
    Calculates the present value of a lump sum received in the future. Params include:
    * rate (required) - the interest rate per period
    * NPER (required) - total number of periods
    * FV (required) - the future value or lump sum to be received
    */
-  function presentValueOfLumpsump(params, cb) {
+  function presentValueOfLumpSum(params, cb) {
     var d = Q.defer();
     if (!params || _.isEmpty(loan.rate) || _.isEmpty(loan.NPER) || _.isEmpty(loan.FV)) {
       d.reject(new Error('params object not provided or params does not include rate, NPER and FV'))
