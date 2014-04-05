@@ -563,9 +563,10 @@
       d.reject(new Error('required parameters for outstandingPrincipal not provided'))
     } else {
       loan.transactions.forEach(function(tx){
-        sumOfPayments += !_.isEmpty(tx.principal) ? Number(tx.principal) : 0;
+        sumOfPayments += typeof tx.principal === "number" ? tx.principal : 0;
       });
       loan.loanBalance = loan.loanAmount - sumOfPayments;
+      console.log(loan.loanBalance);
       d.resolve(loan);
     }
     return d.promise;

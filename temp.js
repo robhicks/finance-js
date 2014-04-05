@@ -17,9 +17,9 @@ var loan = {
   lateChargeMax$: 10,
   daysUntilLate: 10,
   transactions: [
-    {paymentNumber: 1, receivedDate: new Date(2012, 0, 1), amount: 45.88, principal: 25.66},
-    {paymentNumber: 2, receivedDate: new Date(2012, 1, 1), amount: 45.88, principal: 25.66},
-    {paymentNumber: 3, receivedDate: new Date(2012, 2, 1), amount: 45.88, principal: 25.66}
+    {paymentNumber: 1, receivedDate: new Date(2012, 0, 1), amount: 92.08, principal: 25.66},
+    {paymentNumber: 2, receivedDate: new Date(2012, 1, 1), amount: 92.08, principal: 25.66},
+    {paymentNumber: 3, receivedDate: new Date(2012, 2, 1), amount: 92.08, principal: 25.66}
   ]
 };
 
@@ -37,7 +37,7 @@ finance.paymentAmount(loan)
     .then(success, failure);
 
 function success(result){
-  console.log(result);
+//  console.log(result);
 }
 
 function failure(err){
