@@ -29,6 +29,7 @@
     this.dateLastPaymentWasReceived = dateLastPaymentWasReceived;
     this.outstandingPrincipal = outstandingPrincipal;
     this.aggregateLateFees = aggregateLateFees;
+    this.interestAllocationForPayment = interestAllocationForPayment;
 
   }
 
@@ -633,6 +634,47 @@
       }
     }
     d.resolve(loan);
+    return d.promise;
+  }
+
+
+  /**
+   *
+   * @param loan
+   * - closingDate
+   * - loanAmount
+   * - interestRate
+   * - transactions
+   * - paymentAmount
+   * - determinationDate
+   * - daysInYear
+   * @returns {exports.pending.promise|*|promise|Q.defer.promise|Deferred.promise|Pending.promise}
+   */
+  function interestAllocationForPayment(loan){
+    var d = Q.defer();
+    var days = 0;
+    var daysInYear = loan.daysInYear || 365;
+    var determinationDate = loan.determinationDate ? moment(loan.determinationDate) : moment();
+    var closingDate;
+    var rate;
+    var interestPaid = 0;
+    if(!loan || !loan.closingDate || !loan.loanAmount || !loan.interestRate || !loan.paymentAmount){
+      d.reject(new Error('required parameters for accruedInterestForLoanTx not provided'));
+    } else {
+      closingDate = moment(loan.closingDate);
+      days = determinationDate.diff(closingDate, 'days');
+      rate = loan.interestRate / 100 / daysInYear;
+      var accruedInterest = loan.loanAmount * days * rate;
+      console.log(accruedInterest);
+      loan.transactions.forEach(function(tx){
+        var paymentDate = moment(tx.date);
+        if (paymentDate.isBefore(determinationDate)) interestPaid += tx.interest;
+      });
+      loan.allocationToInterest = (accruedInterest - interestPaid) < loan.paymentAmount
+        ? accruedInterest - interestPaid
+        : loan.paymentAmount;
+      d.resolve(loan);
+    }
     return d.promise;
   }
 

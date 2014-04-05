@@ -33,6 +33,7 @@ finance.paymentAmount(loan)
     .then(finance.nextPaymentDate)
     .then(finance.outstandingPrincipal)
     .then(finance.aggregateLateFees)
+    .then(finance.interestAllocationForPayment)
     .then(success, failure);
 
 function success(result){
@@ -40,5 +41,5 @@ function success(result){
 }
 
 function failure(err){
-  console.error(err);
+  //console.error(err);
 }
