@@ -17,9 +17,9 @@ var loan = {
   lateChargeMax$: 10,
   daysUntilLate: 10,
   transactions: [
-    {paymentNumber: 1, receivedDate: new Date(2012, 0, 1), amount: 92.08, principal: 25.66},
-    {paymentNumber: 2, receivedDate: new Date(2012, 1, 1), amount: 92.08, principal: 25.66},
-    {paymentNumber: 3, receivedDate: new Date(2012, 2, 1), amount: 92.08, principal: 25.66}
+    {paymentNumber: 1, txDate: new Date(2012, 0, 1), type: "Regular Payment", amount: 92.09},
+    {paymentNumber: 2, txDate: new Date(2012, 1, 1), type: "Regular Payment", amount: 92.09},
+    {paymentNumber: 3, txDate: new Date(2012, 2, 1), type: "Regular Payment", amount: 92.09}
   ]
 };
 
@@ -32,8 +32,7 @@ finance.paymentAmount(loan)
     .then(finance.isLoanPastDue)
     .then(finance.nextPaymentDate)
     .then(finance.outstandingPrincipal)
-    .then(finance.aggregateLateFees)
-    .then(finance.interestAllocationForPayment)
+    .then(finance.paymentAllocations)
     .then(success, failure);
 
 function success(result){
@@ -41,5 +40,5 @@ function success(result){
 }
 
 function failure(err){
-  //console.error(err);
+  console.error(err);
 }
