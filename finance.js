@@ -492,7 +492,6 @@
    */
   function nextPaymentDate(loan, cb) {
     var d = Q.defer();
-    var date;
     var item;
     var result;
     if (!loan || !loan.dateLastPaymentWasReceived || !loan.amortizationTable) {
@@ -506,6 +505,7 @@
           result = item.txDate;
           break;
         }
+        result = item.txDate;
       }
     }
     loan.nextPaymentDate = result;
@@ -688,61 +688,58 @@
       var closingDate = moment(loan.closingDate);
       var lateFee = calcLateFee(loan);
       var determinationDate = moment();
-      var txDate, pmtDate, graceDate, days, accruedInterest;
-      var tempArray = [];
+      var txDate, pmtDate, graceDate, days, accruedInterest, pmtTransactions;
 
       //Calculate parameters of payment transactions
-      var pmtTransactions = loan.transactions.filter(function(pmt){
-        return pmt.type === 'Regular Payment';
-      });
-
-      while (loan.transactions.length > 0) {
-        loan.transactions.pop();
-      }
-
-      pmtTransactions.forEach(function (tx) {
-        days = moment(tx.txDate).diff(closingDate, 'days');
-        accruedInterest = loan.loanAmount * days * rate;
-        interestPaid = calcInterestPaid(loan, tx.txDate);
-        tx.interest = (accruedInterest - interestPaid) < loan.paymentAmount
-            ? accruedInterest - interestPaid
-            : loan.paymentAmount;
-        tx.principal = loan.paymentAmount - tx.interest;
-        tx.paymentDueDate = loan.amortizationTable[tx.paymentNumber - 1].txDate;
+      loan.transactions.forEach(function (tx) {
+        if (tx.type !== "Late Fee") {
+          txDate = moment(tx.txDate);
+          days = txDate.diff(closingDate, 'days');
+          accruedInterest = loan.loanAmount * days * rate;
+          interestPaid = calcInterestPaid(loan, tx.txDate);
+          tx.interest = (accruedInterest - interestPaid) < tx.amount
+              ? accruedInterest - interestPaid
+              : tx.amount;
+          tx.principal = tx.amount - tx.interest;
+          console.log(tx.paymentNumber);
+          tx.paymentDueDate = loan.amortizationTable[tx.paymentNumber - 1].txDate;
+          tx.loanBalance = getLoanBalance(loan, txDate) - tx.principal;
+        }
       });
 
       //Add late fee transactions
+      pmtTransactions = loan.transactions.filter(function (tx) {
+        return tx.type !== 'Late Fee';
+      });
       loan.amortizationTable.forEach(function (pmt) {
         pmtDate = moment(pmt.txDate).subtract('days', 1);
         graceDate = moment(pmt.txDate).add('days', loan.daysUntilLate);
-        if (!transactionsContain(pmtTransactions, pmtDate, graceDate, loan.paymentAmount) && pmtDate.isBefore(determinationDate))
-          tempArray.push({
-            txDate: graceDate.toISOString(),
+        if (!paymentMadeOnTime(pmtTransactions, pmtDate, graceDate, loan.paymentAmount)
+            && pmtDate.isBefore(determinationDate) && !lateFeeAppliedForDate(loan, txDate)) {
+          txDate = graceDate.toISOString();
+          loan.transactions.push({
+            txDate: txDate,
             type: "Late Fee",
             amount: -1 * lateFee,
-            comments: "Late fee imposed for failure to pay on time or to pay proper amount"
+            comments: "Late fee imposed for failure to pay on time or to pay proper amount",
+            loanBalance: getLoanBalance(loan, txDate)
           });
+        }
       });
-
-      pmtTransactions.forEach(function(tx){
-        loan.transactions.push(tx)
+      loan.update({$pull: {transactions: {type: "Late Fee"}}}, function(err, count){
+        console.log(count);
       });
-
-      tempArray.forEach(function(tx){
-        loan.transactions.push(tx);
-      });
-
+//      console.log(loan.transactions);
       d.resolve(loan);
     }
     if (cb) return cb(loan);
-
     return d.promise;
   }
 
-  function transactionsContain(pmtTransactions, paymentDate, graceDate, amount) {
+  function paymentMadeOnTime(pmtTransactions, paymentDate, graceDate, amount){
     var result = false;
     var tx, txDate;
-    for (var i = 0, len = pmtTransactions.length; i < len; i++){
+    for (var i = 0, len = pmtTransactions.length; i < len; i++) {
       tx = pmtTransactions[i];
       txDate = moment(tx.txDate);
       if (txDate.isBefore(graceDate) && txDate.isAfter(paymentDate) && tx.amount >= amount) {
@@ -751,6 +748,32 @@
       }
     }
     return result;
+  }
+
+  function lateFeeAppliedForDate(loan, txDate){
+    txDate = txDate instanceof moment ? txDate : moment(txDate);
+    var result = false;
+    for(var i = 0, len = loan.transactions.length; i < len; i++){
+      var tx = loan.transactions[i];
+      var tDate = moment(tx.txDate);
+      if(tx.type === 'Late Fee' && tDate.isSame(txDate, 'day')){
+        result = true;
+        break;
+      }
+    }
+    return result;
+  }
+
+  function getLoanBalance(loan, determinationDate) {
+    var originalLoanAmount = Number(loan.loanAmount) || 0;
+    var principalPayments = 0;
+    var dDate = determinationDate instanceof moment ? dDate : moment(determinationDate);
+    var txDate;
+    loan.transactions.forEach(function (tx) {
+      txDate = moment(tx.txDate);
+      if (txDate.isBefore(dDate) && tx.principal && tx.principal != undefined) principalPayments += Number(tx.principal);
+    });
+    return originalLoanAmount - principalPayments;
   }
 
   function calcLateFee(loan) {
@@ -779,10 +802,11 @@
     var pmtDate;
     loan.transactions.forEach(function (tx) {
       pmtDate = moment(tx.txDate);
-      if (pmtDate.isBefore(determinationDate)) interestPaid += tx.interest;
+      if (pmtDate.isBefore(determinationDate) && tx.interest && tx.interest != undefined) interestPaid += Number(tx.interest);
     });
     return interestPaid;
   }
 
-})();
+})
+();
 
