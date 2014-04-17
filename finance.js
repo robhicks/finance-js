@@ -726,9 +726,9 @@
           });
         }
       });
-      loan.update({$pull: {transactions: {type: "Late Fee"}}}, function(err, count){
-        console.log(count);
-      });
+//      loan.update({$pull: {transactions: {type: "Late Fee"}}}, function(err, count){
+//        console.log(count);
+//      });
 //      console.log(loan.transactions);
       d.resolve(loan);
     }
