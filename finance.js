@@ -689,8 +689,8 @@
               ? accruedInterest - interestPaid
               : tx.amount;
           tx.principal = tx.amount - tx.interest;
-          console.log(i, tx.paymentNumber);
-          tx.paymentDueDate = i > 0 ? loan.amortizationTable[tx.paymentNumber - 1].txDate : loan.firstPaymentDate;
+//          console.log(i, tx.paymentNumber);
+          tx.paymentDueDate = i > 0 && loan.amortizationTable[tx.paymentNumber] ? loan.amortizationTable[tx.paymentNumber - 1].txDate : loan.firstPaymentDate;
           tx.loanBalance = getLoanBalance(loan, txDate) - tx.principal;
         }
       });
