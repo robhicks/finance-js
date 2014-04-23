@@ -76,7 +76,7 @@
    */
   function numberOfPayments(loan, cb) {
     var d = Q.defer();
-    if (!loan || !loan.term || !loan.frequency) {
+    if (!loan || _.isEmpty(loan.term) || _.isEmpty(loan.frequency)) {
       d.reject(new Error('improper parameters'));
     } else {
       var frequency = loan.frequency.toLowerCase();
@@ -100,8 +100,8 @@
 
       d.resolve(loan);
       if (cb) return cb(loan);
-      return d.promise;
     }
+    return d.promise;
   }
 
   /*
@@ -116,8 +116,7 @@
    */
   function paymentAmount(loan, cb) {
     var d = Q.defer();
-
-    if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate) {
+    if (!loan || _.isEmpty(loan.loanAmount) || _.isEmpty(loan.term) || _.isEmpty(loan.interestRate)) {
       d.reject(new Error('required parameters not provided'));
     } else {
       var interestRate = loan.interestRate ? Number(loan.interestRate) / 1200 : 0;
@@ -141,8 +140,8 @@
       }
       d.resolve(loan);
       if (cb) return cb(loan);
-      return d.promise;
     }
+    return d.promise;
   }
 
   /*
@@ -159,7 +158,7 @@
    */
   function firstPaymentDate(loan, cb) {
     var d = Q.defer();
-    if (!loan.closingDate) {
+    if (!loan || _.isEmpty(loan.closingDate)) {
       d.reject(new Error('closing date required to determine firstPaymentDate'));
     } else {
       var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
@@ -208,7 +207,7 @@
    */
   function addAmorizationTable(loan, cb) {
     var d = Q.defer();
-    if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate || !loan.firstPaymentDate || !loan.paymentAmount) {
+    if (!loan || _.isEmpty(loan.loanAmount) || _.isEmpty(loan.term) || _.isEmpty(loan.interestRate) || _.isEmpty(loan.firstPaymentDate) || _.isEmpty(loan.paymentAmount)) {
       d.reject(new Error('parameters are incorrect'));
     } else {
       var loanAmount = Number(loan.loanAmount);
@@ -351,7 +350,8 @@
     var paid = 0;
     var earned = 0;
     var date, pmtTxs, amortTxs;
-    if (!loan || !loan.amortizationTable || !loan.transactions || !loan.dateLastPaymentShouldHaveBeenMade) {
+    if (!loan || _.isEmpty(loan.amortizationTable) || _.isEmpty(loan.transactions)
+        || _.isEmpty(loan.dateLastPaymentShouldHaveBeenMade)) {
       d.reject('required isLoanPastDue parameters not provided')
     } else {
       date = moment();
@@ -535,7 +535,7 @@
   function dateLastPaymentShouldHaveBeenMade(loan, cb) {
     var d = Q.defer();
     var result;
-    if (!loan || !loan.amortizationTable) {
+    if (!loan || _.isEmpty(loan.amortizationTable)) {
       d.reject(new Error('required dateLastPaymentShouldHaveBeenMade not provided'));
     } else {
       var determinationDate = loan.determinationDate ? moment(loan.determinationDate) : moment();
