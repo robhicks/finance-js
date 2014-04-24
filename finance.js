@@ -76,9 +76,10 @@
    */
   function numberOfPayments(loan, cb) {
     var d = Q.defer();
-    if (!loan || _.isEmpty(loan.term) || _.isEmpty(loan.frequency)) {
-      d.reject(new Error('improper parameters'));
-    } else {
+    if (!loan) d.reject('loan object not provided');
+    else if (!loan.term) d.reject('loan term not provided');
+    else if (!loan.frequency) d.reject('loan frequency not provided');
+    else {
       var frequency = loan.frequency.toLowerCase();
       var term = loan.term ? Number(loan.term) : 0;
 
@@ -116,9 +117,11 @@
    */
   function paymentAmount(loan, cb) {
     var d = Q.defer();
-    if (!loan || _.isEmpty(loan.loanAmount) || _.isEmpty(loan.term) || _.isEmpty(loan.interestRate)) {
-      d.reject(new Error('required parameters not provided'));
-    } else {
+    if (!loan) d.reject('no loan object provided');
+    else if (!loan.loanAmount) d.reject('loan amount not provided');
+    else if (!loan.term) d.reject('loan term not provided');
+    else if (!loan.interestRate) d.reject('loan interest rate not provided');
+    else {
       var interestRate = loan.interestRate ? Number(loan.interestRate) / 1200 : 0;
       var term = loan.term ? Number(loan.term) : 0;
       var loanAmount = loan.loanAmount ? Number(loan.loanAmount) : 0;
@@ -158,9 +161,9 @@
    */
   function firstPaymentDate(loan, cb) {
     var d = Q.defer();
-    if (!loan || _.isEmpty(loan.closingDate)) {
-      d.reject(new Error('closing date required to determine firstPaymentDate'));
-    } else {
+    if (!loan) d.reject('loan object not provided');
+    else if (!loan.closingDate) d.reject('loan closing date not provided');
+    else {
       var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
       var firstPaymentDay = !_.isEmpty(loan.firstPaymentDay) ? loan.firstPaymentDay : 1;
 
@@ -207,9 +210,13 @@
    */
   function addAmorizationTable(loan, cb) {
     var d = Q.defer();
-    if (!loan || _.isEmpty(loan.loanAmount) || _.isEmpty(loan.term) || _.isEmpty(loan.interestRate) || _.isEmpty(loan.firstPaymentDate) || _.isEmpty(loan.paymentAmount)) {
-      d.reject(new Error('parameters are incorrect'));
-    } else {
+    if(!loan) d.reject('loan object not provided');
+    else if(!loan.loanAmount) d.reject('loan amount missing');
+    else if(!loan.term) d.reject('loan term missing');
+    else if(!loan.interestRate) d.reject('interest rate not provided');
+    else if(!loan.firstPaymentDate) d.reject('first payment date missing');
+    else if(!loan.paymentAmount) d.reject('missing loan payment amount');
+    else {
       var loanAmount = Number(loan.loanAmount);
       var term = Number(loan.term);
       var interestRate = Number(loan.interestRate) / 100;
@@ -350,10 +357,11 @@
     var paid = 0;
     var earned = 0;
     var date, pmtTxs, amortTxs;
-    if (!loan || _.isEmpty(loan.amortizationTable) || _.isEmpty(loan.transactions)
-        || _.isEmpty(loan.dateLastPaymentShouldHaveBeenMade)) {
-      d.reject('required isLoanPastDue parameters not provided')
-    } else {
+    if (!loan) d.reject('loan object not provided');
+    else if (!loan.amortizationTable) d.reject('loan amortization table not provided');
+    else if (!loan.transactions) d.reject('loan transactions not provided');
+    else if (!loan.dateLastPaymentShouldHaveBeenMade) d.reject('last paymend should have date not provided');
+    else {
       date = moment();
       var pmtTxs = loan.transactions.filter(function(tx){
         return tx.type !== "Late Fee" && moment(tx.txDate).isBefore(date);
