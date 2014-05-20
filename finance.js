@@ -568,17 +568,17 @@
    */
   function dateLastPaymentWasReceived(loan, cb) {
     var d = Q.defer();
-    var result;
+    var last;
     if (!loan) {
       d.reject('required parameters for dateLastPaymentWasReceived not provided');
     }
-    var lastPayment = _findLast(loan.transactions, function(tx){
-      var paymentTxs = loan.transactions.filter(function(tx){
-        return tx.type !== 'Late Fee';
-      })
-      var last = _.max(paymentTxs, function(rec){
-        return rec.depositDate;
-      });
+
+    var paymentTxs = loan.transactions.filter(function(tx){
+      return tx.type !== 'Late Fee';
+    });
+
+    last = _.max(paymentTxs, function(rec){
+      return rec.txDate;
     });
 
     loan.dateLastPaymentWasReceived = last.txDate || loan.closingDate;
@@ -632,6 +632,7 @@
         if(!isNaN(tx.amount)) temp += tx.amount;
       });
       loan.aggregateLateFees = temp;
+//      console.log(loan);
       d.resolve(loan);
       if (cb) return cb(loan);
     }
@@ -688,10 +689,7 @@
     } else {
       var rate = loan.interestRate / 100 / daysInYear;
       var closingDate = moment(loan.closingDate);
-      var lateFee = calcLateFee(loan);
-      var determinationDate = moment();
-      var firstPaymentDate = moment(loan.firstPaymentDate);
-      var txDate, pmtDate, graceDate, days, accruedInterest, pmtTransactions, elapsedMonths, i;
+      var txDate, days, accruedInterest;
 
       //Calculate parameters of payment transactions
       loan.transactions.forEach(function (tx, i) {
@@ -723,35 +721,47 @@
    * @returns {*}
    */
   function addLateFees(loan, cb){
+
     var d = Q.defer();
-    var lateFeeTxs = loan.transactions.filter(function (tx) {
-      return tx.type === 'Late Fee';
-    });
-    //remove all existing late fees
-    lateFeeTxs.forEach(function(tx){
-      loan.transactions.id(tx._id).remove();
-    });
-    var pmtTransactions = loan.transactions.filter(function (tx) {
-      return tx.type !== 'Late Fee';
-    });
-    //calculate the number of months that have lapsed starting with the first payment date
-    //until the determination date
-    elapsedMonths = determinationDate.diff(firstPaymentDate, 'months') + 1;
-    for(i = 0; i < elapsedMonths; i++){
-      pmtDate = moment(firstPaymentDate.add('months', i));
-      graceDate = pmtDate.add('days', loan.daysUntilLate);
-      if (!paymentMadeOnTime(pmtTransactions, pmtDate, graceDate, loan.paymentAmount)
-          && pmtDate.isBefore(determinationDate) && !lateFeeAppliedForDate(loan, graceDate)) {
-        txDate = graceDate.toISOString();
-        loan.transactions.push({
-          txDate: txDate,
-          type: "Late Fee",
-          amount: -1 * lateFee,
-          comments: "Late fee imposed for failure to pay on time or to pay proper amount",
-          loanBalance: getLoanBalance(loan, txDate)
-        });
+    if (!loan || !loan.closingDate || !loan.loanAmount || !loan.interestRate || !loan.paymentAmount) {
+      d.reject(new Error('required parameters for addLateFees not provided'));
+    } else {
+      var lateFee = calcLateFee(loan);
+      var determinationDate = moment();
+      var txDate, pmtDate, graceDate, pmtTransactions, elapsedMonths, i;
+
+      var lateFeeTxs = loan.transactions.filter(function (tx) {
+        return tx.type === 'Late Fee';
+      });
+      //remove all existing late fees
+      lateFeeTxs.forEach(function(tx){
+        loan.transactions.id(tx._id).remove();
+      });
+
+      pmtTransactions = loan.transactions.filter(function (tx) {
+        return tx.type !== 'Late Fee';
+      });
+      //calculate the number of months that have lapsed starting with the first payment date
+      //until the determination date
+      elapsedMonths = determinationDate.diff(moment(loan.firstPaymentDate), 'months') + 1;
+
+      for(i = 0; i < elapsedMonths; i++){
+        pmtDate = moment(loan.firstPaymentDate).add('months', i);
+        graceDate =  moment(loan.firstPaymentDate).add('months', i).add('days', loan.daysUntilLate);
+        if (!paymentMadeOnTime(pmtTransactions, pmtDate, graceDate, loan.paymentAmount)
+            && pmtDate.isBefore(determinationDate) && !lateFeeAppliedForDate(loan, graceDate)) {
+          txDate = graceDate.toISOString();
+          loan.transactions.push({
+            txDate: txDate,
+            type: "Late Fee",
+            amount: -1 * lateFee,
+            comments: "Late fee imposed for failure to pay on time or to pay proper amount",
+            loanBalance: getLoanBalance(loan, txDate)
+          });
+        }
       }
     }
+
 
     d.resolve(loan);
     if (cb) return cb(loan);
