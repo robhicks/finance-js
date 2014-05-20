@@ -355,37 +355,13 @@
    */
   function isLoanPastDue(loan, cb) {
     var d = Q.defer();
-    var paid = 0;
-    var earned = 0;
-    var date, pmtTxs, amortTxs;
-    if (!loan) d.reject('loan object not provided');
-    else if (!loan.amortizationTable) d.reject('loan amortization table not provided');
-    else if (!loan.transactions) d.reject('loan transactions not provided');
-    else if (!loan.dateLastPaymentShouldHaveBeenMade) d.reject('last paymend should have date not provided');
-    else {
-      date = moment();
-      var pmtTxs = loan.transactions.filter(function(tx){
-        return tx.type !== "Late Fee" && moment(tx.txDate).isBefore(date);
-      });
-      var amortTxs = loan.amortizationTable.filter(function(pmt){
-        return moment(pmt.txDate).isBefore(date);
-      });
-      pmtTxs.forEach(function(tx){
-        if(!isNaN(tx.amount)) paid += tx.amount;
-      });
-      amortTxs.forEach(function(tx){
-        if(!isNaN(tx.amount)) earned += tx.amount;
-      });
-      if(paid < earned) {
-        loan.pastDueAmount = earned - paid;
-        loan.pastDue = true;
-      } else {
-        loan.pastDue = false;
-        loan.pastDueAmount = 0;
-      }
-      d.resolve(loan);
-      if (cb) return cb(loan);
-    }
+    if (!loan && !loan.transactions) d.reject('loan object not provided');
+    var lateFeeTxs = loan.transactions.filter(function(tx){
+      return tx.type === 'Late Fee';
+    });
+    loan.pastDue = lateFeeTxs.length > 0;
+    d.resolve(loan);
+    if (cb) return cb(loan);
     return d.promise;
   }
 
