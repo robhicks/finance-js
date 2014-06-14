@@ -1,64 +1,38 @@
-(function () {
-  var service = {
-    presentValueOfLumpSum: presentValueOfLumpSum,
-    numberOfPayments: numberOfPayments,
-    paymentAmount: paymentAmount,
-    firstPaymentDate: firstPaymentDate,
-    addAmorizationTable: addAmorizationTable,
-    isLoanPastDue: isLoanPastDue,
-    earnedAmount: earnedAmount,
-    cumulativeInterestPaid: cumulativeInterestPaid,
-    nextPaymentDate: nextPaymentDate,
-    dateLastPaymentShouldHaveBeenMade: dateLastPaymentShouldHaveBeenMade,
-    dateLastPaymentWasReceived: dateLastPaymentWasReceived,
-    outstandingPrincipal: outstandingPrincipal,
-    aggregateLateFees: aggregateLateFees,
-    interestAllocationForPayment: interestAllocationForPayment,
-    paymentAllocations: paymentAllocations,
-    addLateFees: addLateFees,
-    pastDueAmount: pastDueAmount
-  };
-  var _, moment;
-
+(function (FinanceJS) {
+  "use strict";
+  var Q;
   if (typeof module !== 'undefined' && module.exports) {
     Q = require('q');
-    _ = require('lodash');
-    moment = require('moment');
-    module.exports = service;
-  } else if (typeof angular !== 'undefined') {
-    _ = window._;
-    moment = window.moment;
+    var _ = require('lodash');
+    var moment = require('moment');
+    module.exports = new FinanceJs();
+  } else if (angular) {
     angular.module('FinanceJs', [])
-        .factory('FinanceJSService', ['$q', function ($q) {
+        .factory('FinanceService', ['$q', function ($q) {
           Q = $q;
-          return service;
+          return FinanceJs;
         }]);
   } else {
-    window.finance = this;
+    window.FinanceJS = FinanceJS;
   }
 
-  function pastDueAmount(loan) {
-    var d = Q.defer();
-    var paymentsDue = loan.amortizationTable.filter(function(tx) {
-      return moment(tx.txDate).isBefore(moment());
-    });
-    var paymentsMade = loan.transactions.filter(function(tx){
-      return (moment(tx.txDate).isBefore(moment()) && tx.type !== 'Late Fee');
-    });
-    var sumPaymentsDue = 0, sumPaymentsMade = 0;
+  function FinanceJs() {
 
-    paymentsDue.forEach(function(pmt){
-      sumPaymentsDue += Number(pmt.amount);
-    });
+    this.presentValueOfLumpSum = presentValueOfLumpSum;
+    this.numberOfPayments = numberOfPayments;
+    this.paymentAmount = paymentAmount;
+    this.firstPaymentDate = firstPaymentDate;
+    this.addAmorizationTable = addAmorizationTable;
+    this.isLoanPastDue = isLoanPastDue;
+    this.earnedAmount = earnedAmount;
+    this.cumulativeInterestPaid = cumulativeInterestPaid;
+    this.nextPaymentDate = nextPaymentDate;
+    this.dateLastPaymentShouldHaveBeenMade = dateLastPaymentShouldHaveBeenMade;
+    this.dateLastPaymentWasReceived = dateLastPaymentWasReceived;
+    this.outstandingPrincipal = outstandingPrincipal;
+    this.aggregateLateFees = aggregateLateFees;
+    this.interestAllocationForPayment = interestAllocationForPayment;
 
-    paymentsMade.forEach(function(pmt){
-      sumPaymentsMade += Number(pmt.amount);
-    });
-
-    loan.pastDueAmount = sumPaymentsDue - sumPaymentsMade;
-    d.resolve(loan);
-
-    return d.promise;
   }
 
   /*
@@ -69,7 +43,7 @@
    * NPER (required) - total number of periods
    * FV (required) - the future value or lump sum to be received
    */
-  function presentValueOfLumpSum(params) {
+  function presentValueOfLumpSum(params, cb) {
     var d = Q.defer();
     if (!params || _.isEmpty(loan.rate) || _.isEmpty(loan.NPER) || _.isEmpty(loan.FV)) {
       d.reject(new Error('params object not provided or params does not include rate, NPER and FV'))
@@ -100,12 +74,11 @@
    * callback (optional) - function of CommonJs/NodeJs return, e.g., function(err, result)
 
    */
-  function numberOfPayments(loan, cb) {
+  function numberOfPayments(loan) {
     var d = Q.defer();
-    if (!loan) d.reject('loan object not provided');
-    else if (!loan.term) d.reject('loan term not provided');
-    else if (!loan.frequency) d.reject('loan frequency not provided');
-    else {
+    if (!loan || !loan.term || !loan.frequency) {
+      d.reject(new Error('improper parameters'));
+    } else {
       var frequency = loan.frequency.toLowerCase();
       var term = loan.term ? Number(loan.term) : 0;
 
@@ -126,9 +99,8 @@
       }
 
       d.resolve(loan);
-      if (cb) return cb(loan);
+      return d.promise;
     }
-    return d.promise;
   }
 
   /*
@@ -141,13 +113,12 @@
    * interestOnly (optional) - boolean indicating if the loan is an interest only loan
    * type (optional) - whether the payment is made at the beginning (1) or the end (0) of a period
    */
-  function paymentAmount(loan, cb) {
+  function paymentAmount(loan) {
     var d = Q.defer();
-    if (!loan) d.reject('no loan object provided');
-    else if (!loan.loanAmount) d.reject('loan amount not provided');
-    else if (!loan.term) d.reject('loan term not provided');
-    else if (!loan.interestRate) d.reject('loan interest rate not provided');
-    else {
+
+    if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate) {
+      d.reject(new Error('required parameters not provided'));
+    } else {
       var interestRate = loan.interestRate ? Number(loan.interestRate) / 1200 : 0;
       var term = loan.term ? Number(loan.term) : 0;
       var loanAmount = loan.loanAmount ? Number(loan.loanAmount) : 0;
@@ -168,9 +139,8 @@
         }
       }
       d.resolve(loan);
-      if (cb) return cb(loan);
+      return d.promise;
     }
-    return d.promise;
   }
 
   /*
@@ -185,11 +155,11 @@
    * firstPaymentDay (optional) - desired day of the month for the payment - defaults to the first day
    * cb (optional) - optional CommonJS (Node style) callback
    */
-  function firstPaymentDate(loan, cb) {
+  function firstPaymentDate(loan) {
     var d = Q.defer();
-    if (!loan) d.reject('loan object not provided');
-    else if (!loan.closingDate) d.reject('loan closing date not provided');
-    else {
+    if (!loan.closingDate) {
+      d.reject(new Error('closing date required to determine firstPaymentDate'));
+    } else {
       var closingDate = loan.closingDate ? moment(loan.closingDate) : moment();
       var firstPaymentDay = !_.isEmpty(loan.firstPaymentDay) ? loan.firstPaymentDay : 1;
 
@@ -198,7 +168,6 @@
       loan.firstPaymentDate = loan.firstPaymentDate.toISOString();
       d.resolve(loan);
     }
-    if (cb) return cb(loan);
     return d.promise;
   }
 
@@ -234,19 +203,15 @@
    * date: the date of the payment for the period
 
    */
-  function addAmorizationTable(loan, cb) {
+  function addAmorizationTable(loan) {
     var d = Q.defer();
-    if (!loan) d.reject('loan object not provided');
-    else if (!loan.loanAmount) d.reject('loan amount missing');
-    else if (!loan.term) d.reject('loan term missing');
-    else if (!loan.interestRate) d.reject('interest rate not provided');
-    else if (!loan.firstPaymentDate) d.reject('first payment date missing');
-    else if (!loan.paymentAmount) d.reject('missing loan payment amount');
-    else {
+    if (!loan || !loan.loanAmount || !loan.term || !loan.interestRate || !loan.firstPaymentDate || !loan.paymentAmount) {
+      d.reject(new Error('parameters are incorrect'));
+    } else {
       var loanAmount = Number(loan.loanAmount);
       var term = Number(loan.term);
-      var interestRate = Number(loan.interestRate) / 100;
-      var frequency = String(loan.frequency).toLowerCase();
+      var interestRate = Number(loan.interestRate);
+      var frequency = Number(loan.frequency);
       var type = loan.type && !_.isEmpty(loan.type) ? Number(loan.type) : 0;
       var currDate = moment(loan.firstPaymentDate);
       var dateOffset = 1;
@@ -259,40 +224,38 @@
       var totalInterest = 0.0;
       var currInterest = 0;
       var currPrinciple = 0;
-      var tempDate, tempDay, balloonPeriod, balloonAmount, payment, startingPrincipal, balance;
+      var tempDate, tempDay, balloonPeriod, balloonAmount, payment, balance;
+      interestRate = interestRate / 100;
 
-      switch (frequency) {
-        case 'semimonthly':
-          payments = term * 2;
-          interestRate = interestRate / 12 / 2;
-          semimonthly = true;
-          dateOffset = parseInt(365.25 / 12 / 2);
-          break;
-        case 'bimonthly':
-          payments = term / 2;
-          interestRate = interestRate / 12 * 2;
-          dateOffset = 2;
-          break;
-        case 'quarterly':
-          payments = term / 4;
-          interestRate = interestRate / 12 * 4;
-          dateOffset = 4;
-          break;
-        case 'semiannually':
-          payments = term / 6;
-          interestRate = interestRate / 12 * 6;
-          dateOffset = 6;
-          break;
-        case 'annually':
-          payments = term / 12;
-          interestRate = interestRate / 12 * 12;
-          dateOffset = 12;
-          break;
-        default:
-          payments = term;
-          interestRate = interestRate / 12;
-          dateOffset = 1;
-          break;
+      if (!frequency || frequency === 'monthly') {
+        payments = term;
+        interestRate = interestRate / 12;
+        dateOffset = 1;
+      } else if (frequency.toLowerCase() === 'semimonthly') {
+        (payments = term * 2);
+        interestRate = interestRate / 12 / 2;
+        semimonthly = true;
+        dateOffset = parseInt(365.25 / 12 / 2);
+      } else if (frequency.toLowerCase() === 'bimonthly') {
+        payments = (term / 2);
+        interestRate = interestRate / 12 * 2;
+        dateOffset = 2;
+      } else if (frequency.toLowerCase() === 'quarterly') {
+        payments = (term / 4);
+        interestRate = interestRate / 12 * 4;
+        dateOffset = 4;
+      } else if (frequency.toLowerCase() === 'semiannually') {
+        payments = (term / 6);
+        interestRate = interestRate / 12 * 6;
+        dateOffset = 6;
+      } else if (frequency.toLowerCase() === 'annually') {
+        payments = (term / 12);
+        interestRate = interestRate / 12 * 12;
+        dateOffset = 12;
+      } else if (frequency.toLowerCase() === 'none' || frequency.toLowerCase() === 'one') {
+        payments = 1;
+        interestRate = interestRate * (term / 12);
+        dateOffset = payments;
       }
 
       if (balloonDate) {
@@ -322,11 +285,10 @@
       loan.payments = payments;
       payment = loan.paymentAmount;
       balance = loanAmount;
-      startingPrincipal = loanAmount;
-
 
       for (var i = 0; i < payments; i++) {
         currInterest = balance * interestRate;
+        totalInterest += currInterest;
         currPrinciple = payment - currInterest;
         balance -= currPrinciple;
         if (i === balloonPeriod) {
@@ -337,15 +299,13 @@
 
         schedule.push({
           paymentNumber: i + 1,
-          startintPrincipal: startingPrincipal,
-          loanBalance: balance,
-          amount: payment,
-          principal: currPrinciple,
-          interest: currInterest,
-          txDate: currDate.toISOString()
+          principle: balance,
+          accumulatedInterest: totalInterest,
+          payment: payment,
+          paymentToPrinciple: currPrinciple,
+          paymentToInterest: currInterest,
+          date: currDate.toISOString()
         });
-
-        startingPrincipal -= currPrinciple;
 
         if (i === balloonPeriod) break;
 
@@ -361,7 +321,6 @@
         }
       }
       loan.amortizationTable = schedule;
-      if (cb) return cb(loan);
       d.resolve(loan);
     }
     return d.promise;
@@ -378,14 +337,25 @@
    * compares amount of payments that have been received against those that
    * should have been received.
    */
-  function isLoanPastDue(loan, cb) {
+  function isLoanPastDue(loan) {
     var d = Q.defer();
-    if (!loan && !loan.transactions) return d.reject('loan object not provided');
-
-    loan.pastDue = loan.pastDueAmount > 0;
-    console.log('isLoanPastDue');
-    d.resolve(loan);
-    if (cb) return cb(loan);
+    var paid = 0;
+    var earned = 0;
+    var date;
+    if (!loan || !loan.amortizationTable || !loan.transactions || !loan.dateLastPaymentShouldHaveBeenMade) {
+      d.reject('required isLoanPastDue parameters not provided')
+    } else {
+      var dateLastPaymentShouldHaveBeenMade = moment(loan.dateLastPaymentShouldHaveBeenMade);
+      loan.transactions.forEach(function (tx) {
+        paid += Number(tx.amount);
+      });
+      loan.amortizationTable.forEach(function (pmt) {
+        date = moment(pmt.date);
+        if (date.isBefore(dateLastPaymentShouldHaveBeenMade)) earned += Number(pmt.payment);
+      });
+      loan.pastDue = paid < earned;
+      d.resolve(loan);
+    }
     return d.promise;
   }
 
@@ -411,7 +381,7 @@
    * frequency (optional) - the periodicity of the loan, e.g., 'monthly', 'quarterly', etc.
    */
 
-  function earnedAmount(loan, cb) {
+  function earnedAmount(loan) {
     var deferred = Q.defer();
     if (!loan || !loan.loanAmount || !loan.closingDate
         || !loan.firstPaymentDate || !loan.interestRate || !loan.term
@@ -445,7 +415,7 @@
     var totalAmountEarned = interestEarnedBeforeFirstPayment + cumInterestPaid + InitialLoanAmount - remainingBalance + interestEarnedAfterLastPayment;
 
     deferred.resolve(totalAmountEarned);
-    if (cb) return cb(loan);
+
     return deferred.promise;
 
   }
@@ -510,8 +480,9 @@
    * - amortizationTable
    * @returns {promise|Q.promise}
    */
-  function nextPaymentDate(loan, cb) {
+  function nextPaymentDate(loan) {
     var d = Q.defer();
+    var date;
     var item;
     var result;
     if (!loan || !loan.dateLastPaymentWasReceived || !loan.amortizationTable) {
@@ -520,17 +491,15 @@
       var dateLastPaymentWasReceived = moment(loan.dateLastPaymentWasReceived);
       for (var i = 0, len = loan.amortizationTable.length; i < len; i++) {
         item = loan.amortizationTable[i];
-        txDate = moment(item.txDate);
-        if (txDate.isAfter(dateLastPaymentWasReceived)) {
-          result = item.txDate;
+        date = moment(item.date);
+        if (date.isAfter(dateLastPaymentWasReceived)) {
+          result = item.date;
           break;
         }
-        result = item.txDate;
       }
     }
     loan.nextPaymentDate = result;
     d.resolve(loan);
-    if (cb) return cb(loan);
     return d.promise;
   }
 
@@ -541,10 +510,10 @@
    *  - daysUntilLate (optional) - the grace days for the loan - defaults to 0
    *  - determinationDate (optional) - the date the determination is made, defaults to today
    */
-  function dateLastPaymentShouldHaveBeenMade(loan, cb) {
+  function dateLastPaymentShouldHaveBeenMade(loan) {
     var d = Q.defer();
     var result;
-    if (!loan || _.isEmpty(loan.amortizationTable)) {
+    if (!loan || !loan.amortizationTable) {
       d.reject(new Error('required dateLastPaymentShouldHaveBeenMade not provided'));
     } else {
       var determinationDate = loan.determinationDate ? moment(loan.determinationDate) : moment();
@@ -557,7 +526,6 @@
       loan.dateLastPaymentShouldHaveBeenMade = result;
       d.resolve(loan)
     }
-    if (cb) return cb(loan);
     return d.promise;
   }
 
@@ -566,24 +534,20 @@
    * @param loan
    * - transactions
    */
-  function dateLastPaymentWasReceived(loan, cb) {
+  function dateLastPaymentWasReceived(loan) {
     var d = Q.defer();
-    var last;
-    if (!loan) {
-      d.reject('required parameters for dateLastPaymentWasReceived not provided');
+    var result = null;
+    if (!loan || !loan.transactions) {
+      d.reject('required dateLastPaymentWasReceived not provided');
+    } else {
+      loan.transactions.forEach(function (tx) {
+        result = tx.receivedDate;
+      });
+      if (result) {
+        loan.dateLastPaymentWasReceived = result;
+        d.resolve(loan);
+      } else d.reject('no transactions to determine dateLastPaymentWasReceived');
     }
-
-    var paymentTxs = loan.transactions.filter(function (tx) {
-      return tx.type !== 'Late Fee';
-    });
-
-    last = _.max(paymentTxs, function (rec) {
-      return rec.txDate;
-    });
-
-    loan.dateLastPaymentWasReceived = last.txDate || loan.closingDate;
-    d.resolve(loan);
-    if (cb) return cb(loan);
     return d.promise;
   }
 
@@ -594,62 +558,85 @@
    * - loanAmount
    * @returns {promise|Q.promise}
    */
-  function outstandingPrincipal(loan, cb) {
+  function outstandingPrincipal(loan) {
     var d = Q.defer();
     var sumOfPayments = 0;
     if (!loan || !loan.loanAmount || !loan.transactions) {
       d.reject(new Error('required parameters for outstandingPrincipal not provided'))
     } else {
-      var paymentTxs = loan.transactions.filter(function(tx){ return tx.type !== "Late Fee"});
-      paymentTxs.forEach(function (tx) {
-        sumOfPayments += tx.principal;
+      loan.transactions.forEach(function (tx) {
+        sumOfPayments += typeof tx.principal === "number" ? tx.principal : 0;
       });
       loan.loanBalance = loan.loanAmount - sumOfPayments;
+      console.log(loan.loanBalance);
       d.resolve(loan);
     }
-    if (cb) return cb(loan);
     return d.promise;
-  }
-
-  function remaininPrincipal(loan) {
-    var sumOfPayments = 0;
-    if (!loan || !loan.loanAmount || !loan.transactions) {
-      return new Error("required loan parameters not provided");
-    } else {
-      var paymentTxs = loan.transactions.filter(function(tx){ return tx.type !== "Late Fee"});
-      paymentTxs.forEach(function (tx) {
-        sumOfPayments += tx.principal;
-      });
-      return loan.loanAmount - sumOfPayments;
-    }
   }
 
   /**
    *
    * @param loan
-   * @param cb
-   * @returns {*}
+   * - transactions
+   * - lateChargeType (required) - can be 'none', 'lateChargeFixed', or 'lateChargePercent'
+   * - lateChargePercent (optional) - if largeChargeType == lateChargePercent this the
+   *    percent of the monthly payment that is charged as a late fee
+   * - lateChargeMin$ (optional) - low er bounding for lateChargePercent
+   * - lateChargeMax$ (optional) - upper bounding for lateChargePercent
+   * - lateChargeFixed (optional) - fixed late charge
+   * - daysUntilLate (required) - the number of days after payment is due that user is given without late fee
+   * - amortizationTable (required)
+   * - paymentAmount (required)
+   * - transactions
+   * @returns {promise|Q.promise}
    */
-  function aggregateLateFees(loan, cb) {
+  function aggregateLateFees(loan) {
     var d = Q.defer();
+    var datePaymentShouldHaveBeenReceived;
+    var datePaymentWasReceived;
     var determinationDate = moment();
-    var lateFeeTxs;
-    var temp = 0;
+    var payment;
+    var tx;
+    var lateFee = 0;
 
-    if (!loan || !loan.transactions) {
+    loan.aggregateLateFees = 0;
+
+    if (!loan || !loan.lateChargeType || !loan.daysUntilLate || !loan.amortizationTable || !loan.transactions) {
       d.reject(new Error('required parameters for aggregateLateFees not provided'));
     } else {
-      lateFeeTxs = loan.transactions.filter(function (tx) {
-        return moment(tx.txDate).isBefore(determinationDate) && tx.type === "Late Fee";
-      });
-      lateFeeTxs.forEach(function (tx) {
-        if (!isNaN(tx.amount)) temp += tx.amount;
-      });
-      loan.aggregateLateFees = temp;
-      console.log('aggregateLateFees');
-      d.resolve(loan);
-      if (cb) return cb(loan);
+      if (loan.lateChargeType === 'lateChargeFixed') {
+        if (loan.lateChargeFixed) {
+          lateFee = loan.lateChargeFixed;
+        }
+      } else if (loan.lateChargeType === 'lateChargePercent') {
+        if (loan.lateChargePercent) {
+          lateFee = loan.paymentAmount * loan.lateChargePercent / 100;
+          if (loan.lateChargeMin$ && lateFee < loan.lateChargeMin$) {
+            lateFee = loan.lateChargeMin$;
+          }
+          if (loan.lateChargeMax$ && lateFee > loan.lateChargeMax$) {
+            lateFee = loan.lateChargeMax$;
+          }
+        }
+      }
+
+      for (var i = 0, l1 = loan.amortizationTable.length; i < l1; i++) {
+        payment = loan.amortizationTable[i];
+        datePaymentShouldHaveBeenReceived = moment(payment.date).add('days', loan.daysUntilLate);
+        if (datePaymentShouldHaveBeenReceived.isBefore(determinationDate)) {
+          loan.aggregateLateFees += lateFee;
+        }
+      }
+      for (var j = 0, l2 = loan.transactions.length; j < l2; j++) {
+        tx = loan.transactions[j];
+        datePaymentWasReceived = moment(tx.receivedDate);
+        if (datePaymentWasReceived.isBefore(determinationDate)) {
+          tx.lateFees = lateFee;
+          loan.aggregateLateFees -= lateFee;
+        }
+      }
     }
+    d.resolve(loan);
     return d.promise;
   }
 
@@ -666,182 +653,52 @@
    * - daysInYear
    * @returns {exports.pending.promise|*|promise|Q.defer.promise|Deferred.promise|Pending.promise}
    */
-  function interestAllocationForPayment(loan, tx, cb) {
+  function interestAllocationForPayment(loan) {
     var d = Q.defer();
-    d.resolve(paymentInterest(loan, tx));
-    if (cb) return cb(loan);
-    return d.promise;
-  }
-
-  function paymentInterest(loan, tx) {
-    var accruedInterest = 0;
+    var days = 0;
     var daysInYear = loan.daysInYear || 365;
-    var txDate = moment(tx.txDate);
-    var previousTxs = loan.transactions.filter(function (ttx) {
-      return moment(ttx.txDate).isBefore(txDate) && ttx.type !== "Late Fee";
-    });
-    var lastTx = previousTxs.length > 0 ? _.max(previousTxs, function (rec) {
-      return rec.txDate
-    }) : null;
-    var previousPaymentDate = lastTx ? moment(lastTx.txDate) : moment(loan.closingDate);
-    var paymentDate = moment(tx.txDate);
-    var rate = loan.interestRate / 100 / daysInYear;
-    var elapsedDays = txDate.diff(previousPaymentDate, 'days');
-    loan.loanBalance = getLoanBalance(loan, txDate);
-    return elapsedDays * rate * loan.loanBalance;
-  }
-
-  function paymentAllocations(loan, cb) {
-    var d = Q.defer();
-    var daysInYear = loan.daysInYear || 365;
+    var determinationDate = loan.determinationDate ? moment(loan.determinationDate) : moment();
+    var closingDate;
+    var rate;
     var interestPaid = 0;
     if (!loan || !loan.closingDate || !loan.loanAmount || !loan.interestRate || !loan.paymentAmount) {
-      d.reject(new Error('required parameters for paymentAllocations not provided'));
+      d.reject(new Error('required parameters for accruedInterestForLoanTx not provided'));
     } else {
-
-      var paymentTxs = loan.transactions.filter(function(tx) { return tx.type !== "Late Fee"});
-
-      console.log(loan.transactions);
-      paymentTxs.forEach(function(tx, i){
-        tx.interest = paymentInterest(loan, tx);
-        tx.principal = tx.amount - tx.interest;
-//        console.log(i, 'interest: ', tx.interest, ' principal: ', tx.principal);
-        tx.loanBalance = getLoanBalance(loan, tx.txDate) - tx.principal;
+      closingDate = moment(loan.closingDate);
+      days = determinationDate.diff(closingDate, 'days');
+      rate = loan.interestRate / 100 / daysInYear;
+      var accruedInterest = loan.loanAmount * days * rate;
+      console.log(accruedInterest);
+      loan.transactions.forEach(function (tx) {
+        var paymentDate = moment(tx.date);
+        if (paymentDate.isBefore(determinationDate)) interestPaid += tx.interest;
       });
-
-      console.log(loan.transactions);
-
+      loan.allocationToInterest = (accruedInterest - interestPaid) < loan.paymentAmount
+          ? accruedInterest - interestPaid
+          : loan.paymentAmount;
       d.resolve(loan);
-      console.log('paymentAllocations');
     }
-    if (cb) return cb(loan);
     return d.promise;
   }
 
-  /**
-   * Add Late Fees
-   * @param loan
-   * @param cb
-   * @returns {*}
-   */
-  function addLateFees(loan, cb) {
+})();
 
-    var d = Q.defer();
-    if (!loan || !loan.closingDate || !loan.loanAmount || !loan.interestRate || !loan.paymentAmount) {
-      d.reject(new Error('required parameters for addLateFees not provided'));
-    } else {
-      var lateFee = calcLateFee(loan);
-      var determinationDate = moment();
-      var txDate, pmtDate, graceDate, pmtTransactions, elapsedMonths, i;
+function amountPaid(loan) {
+  var paid = 0;
+  loan.transactions.forEach(function (tx) {
+    paid += tx.paymentAmount;
+  });
+  return paid;
+}
 
-      var lateFeeTxs = loan.transactions.filter(function (tx) {
-        return tx.type === 'Late Fee';
-      });
-      //remove all existing late fees
-      lateFeeTxs.forEach(function (tx) {
-        loan.transactions.id(tx._id).remove();
-      });
-
-      pmtTransactions = loan.transactions.filter(function (tx) {
-        return tx.type !== 'Late Fee';
-      });
-      //calculate the number of months that have lapsed starting with the first payment date
-      //until the determination date
-      elapsedMonths = determinationDate.diff(moment(loan.firstPaymentDate), 'months') + 1;
-
-      for (i = 0; i < elapsedMonths; i++) {
-        pmtDate = moment(loan.firstPaymentDate).add('months', i);
-        graceDate = moment(loan.firstPaymentDate).add('months', i).add('days', loan.daysUntilLate);
-        if (!paymentMadeOnTime(pmtTransactions, pmtDate, graceDate, loan.paymentAmount)
-            && pmtDate.isBefore(determinationDate) && !lateFeeAppliedForDate(loan, graceDate)) {
-          txDate = graceDate.toISOString();
-          console.log('loan balance in late fees: ', getLoanBalance(loan, txDate));
-          loan.transactions.push({
-            txDate: txDate,
-            type: "Late Fee",
-            amount: -1 * lateFee,
-            comments: "Late fee imposed for failure to pay on time or to pay proper amount",
-            loanBalance: getLoanBalance(loan, txDate)
-          });
-        }
-      }
-    }
-
-    console.log('addLateFees');
-    d.resolve(loan);
-    if (cb) return cb(loan);
-    return d.promise;
-  }
-
-  function paymentMadeOnTime(pmtTransactions, paymentDate, graceDate, amount) {
-    var result = false;
-    var tx, txDate;
-    for (var i = 0, len = pmtTransactions.length; i < len; i++) {
-      tx = pmtTransactions[i];
-      txDate = moment(tx.txDate);
-      if (txDate.isBefore(graceDate) && txDate.isAfter(paymentDate) && tx.amount >= amount) {
-        result = true;
-        break;
-      }
-    }
-    return result;
-  }
-
-  function lateFeeAppliedForDate(loan, txDate) {
-    txDate = txDate._isAMomentObject ? txDate : moment(txDate);
-    var result = false;
-    var lateFeeTxs = loan.transactions.filter(function (tx) {
-      return tx.type === "Late Fee"
-    });
-    lateFeeTxs.forEach(function (tx) {
-      if (moment(tx.txDate).isSame(txDate)) result = true;
-    });
-    return result;
-  }
-
-  function getLoanBalance(loan, determinationDate) {
-    var originalLoanAmount = Number(loan.loanAmount) || 0;
-    var principalPayments = 0;
-    var dDate = determinationDate instanceof moment ? dDate : moment(determinationDate);
-    var txDate;
-    loan.transactions.forEach(function (tx) {
-      txDate = moment(tx.txDate);
-      if (txDate.isBefore(dDate) && tx.principal && tx.principal != undefined) principalPayments += Number(tx.principal);
-    });
-    return originalLoanAmount - principalPayments;
-  }
-
-  function calcLateFee(loan) {
-    var lateFee = 0;
-    if (loan.lateChargeType === 'lateChargeFixed') {
-      if (loan.lateChargeFixed) {
-        lateFee = loan.lateChargeFixed;
-      }
-    } else if (loan.lateChargeType === 'lateChargePercent') {
-      if (loan.lateChargePercent) {
-        lateFee = loan.paymentAmount * loan.lateChargePercent / 100;
-        if (loan.lateChargeMin$ && lateFee < loan.lateChargeMin$) {
-          lateFee = loan.lateChargeMin$;
-        }
-        if (loan.lateChargeMax$ && lateFee > loan.lateChargeMax$) {
-          lateFee = loan.lateChargeMax$;
-        }
-      }
-    }
-    return lateFee;
-  }
-
-  function calcInterestPaid(loan, receivedDate) {
-    var interestPaid = 0;
-    var determinationDate = moment(receivedDate);
-    var pmtDate;
-    loan.transactions.forEach(function (tx) {
-      pmtDate = moment(tx.txDate);
-      if (pmtDate.isBefore(determinationDate) && tx.interest && tx.interest != undefined) interestPaid += Number(tx.interest);
-    });
-    return interestPaid;
-  }
-
-})
-();
+function amountEarned(loan) {
+  var dateLastPaymentShouldHaveBeenMade = moment(loan.dateLastPaymentShouldHaveBeenMade);
+  var date;
+  var sum = 0;
+  loan.amortizationTable.forEach(function (pmt) {
+    date = moment(pmt.date)
+    if (date.isBefore(dateLastPaymentShouldHaveBeenMade)) sum += pmt.payment;
+  });
+  return sum;
+}
 
