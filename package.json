@@ -1,11 +1,11 @@
 {
-  "name": "financejs",
+  "name": "financee-js",
   "description": "Isomorphic Javascript finance functions",
   "version": "1.0.0",
   "author": "Rob Hicks <rob@hixfamily.org>",
   "repository": {
     "type": "git",
-    "url": "git://github.com/robhicks/financejs"
+    "url": "git://github.com/robhicks/finance-js"
   },
   "browser": {
     "dist/finance-js.iife.js": "dist/finance-js.iife.js",
@@ -50,6 +50,6 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/robhicks/financejs/issues"
+    "url": "https://github.com/robhicks/finance-js/issues"
   }
 }
