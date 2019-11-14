@@ -1,25 +1,37 @@
 {
   "name": "financejs",
-  "description": "Financial module for node, angular and Javascript",
-  "version": "0.0.5",
+  "description": "Isomorphic Javascript finance functions",
+  "version": "1.0.0",
   "author": "Rob Hicks <rob@hixfamily.org>",
   "repository": {
     "type": "git",
     "url": "git://github.com/robhicks/financejs"
   },
-  "main": "./finance.js",
+  "browser": {
+    "dist/finance-js.iife.js": "dist/finance-js.iife.js",
+    "dist/finance-js.esm.js": "dist/finance-js.esm.js"
+  },
+  "main": "index.js",
+  "module": "index.mjs",
   "scripts": {
-    "start": "node test"
+    "start": "rollup -cw"
   },
-  "dependencies": {
-    "lodash": "^4.17.15",
-    "moment": "^2.4.0",
-    "q": "^2.0.1"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "grunt": "~0.4.1",
-    "grunt-jasmine-node": "~0.1.0",
-    "grunt-contrib-watch": "~0.5.3"
+    "chai": "^4.2.0",
+    "eslint": "^6.6.0",
+    "eslint-plugin-chai-expect": "^2.0.1",
+    "eslint-plugin-html": "^6.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-mocha": "^6.2.1",
+    "glob": "^7.1.6",
+    "mocha": "^6.2.2",
+    "rollup": "^1.27.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-live-server": "^1.0.3",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-terser": "^5.1.2",
+    "sinon": "^7.5.0"
   },
   "keywords": [
     "finance",
@@ -36,16 +48,8 @@
     "payments",
     "amortiation table"
   ],
-  "licenses": [
-    {
-      "type": "MIT"
-    },
-    {
-      "type": "GPL2"
-    }
-  ],
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/robhicks/financejs/issues"
-  },
-  "license": "MIT"
+  }
 }
