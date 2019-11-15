@@ -1,3 +1,4 @@
+import { daysBetween } from './daysBetween.js';
 /*
  firstPaymentDate
  ----------------
@@ -10,10 +11,17 @@
  * firstPaymentDay (optional) - desired day of the month for the payment - defaults to the first day
  */
 export function firstPaymentDate(closingDate = new Date(), firstPaymentDay = 1) {
-  const oneMonthOut = new Date(closingDate.setMonth(closingDate.getMonth() + 1));
-  const twoMonthsOut = new Date(closingDate.setMonth(closingDate.getMonth() + 2));
-  const oneMonthOutDate = new Date(oneMonthOut.setDate(firstPaymentDay));
-  const twoMonthsOutDate = new Date(twoMonthsOut.setDate(firstPaymentDay));
-  console.log('twoMonthsOutDate.toDateString()', twoMonthsOutDate.toDateString());
-  return closingDate.getDate() > 1 ? closingDate.setMonth(closingDate.getMonth() + 2) : closingDate.setMonth(closingDate.getMonth() + 1);
+  const cd = closingDate.getDate();
+  const om = new Date(closingDate);
+  om.setMonth(om.getMonth() + 1);
+  om.setDate(firstPaymentDay);
+  if (cd > 1) {
+    if (daysBetween(closingDate, om) > 30) return om;
+    else {
+      om.setMonth(om.getMonth() + 1);
+      return om;
+    }
+  }
+  return om;
+
 }
