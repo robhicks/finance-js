@@ -1,11 +1,11 @@
-import { interestPayments } from './interestPayments.js';
+import { interestPayments } from "../interestPayments";
 
-describe('interestPayments()', () => {
-  it('should return 0 if no payments have been made', () => {
+describe("interestPayments()", () => {
+  it("should return 0 if no payments have been made", () => {
     const ip = interestPayments();
     expect(ip).to.equal(0);
   });
-  it('should return the interest payments made at the end of each period', () => {
+  it("should return the interest payments made at the end of each period", () => {
     const rate = 10 / 100 / 12;
     const periods = 12;
     const amount = 1000;
@@ -13,7 +13,7 @@ describe('interestPayments()', () => {
     expect(ip).to.equal(104.71306744129683);
   });
 
-  it('should return the interest payments made at the beginning of each period', () => {
+  it("should return the interest payments made at the beginning of each period", () => {
     const rate = 10 / 100 / 12;
     const periods = 12;
     const amount = 1000;

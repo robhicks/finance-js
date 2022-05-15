@@ -1,6 +1,7 @@
 import { cumulativeExpectedInterestPaid } from './cumulativeExpectedInterestPaid.js';
 import { daysBetween } from './daysBetween.js';
 import { monthsBetween } from './monthsBetween.js';
+import { numberOfPayments } from './numberOfPayments.js';
 import { remainingBalance } from './remainingBalance.js';
 /*
  expectedLoanProceeds
@@ -40,10 +41,10 @@ export function expectedLoanProceeds({
   const interestEarnedBeforeFirstPayment = daysBeforeFirstPayment * amount * dailyRate - prepaidInterest;
   const numberOfMonths = monthsBetween(firstPaymentDate, determinationDate);
   const numberOfExtraDays = daysBetween(firstPaymentDate, determinationDate) - numberOfMonths * 30;
+  const np = numberOfPayments(numberOfMonths, frequency);
 
   const cumInterestPaid = cumulativeExpectedInterestPaid(amount, periodicRate, term);
-
-  const rb = remainingBalance(amount, payment, periodicRate, numberOfMonths);
+  const rb = remainingBalance({ originalAmount: amount, payment, rate: periodicRate, payments: np });
   const interestEarnedAfterLastPayment = numberOfExtraDays * rb * dailyRate;
   const expectedProceeds = interestEarnedBeforeFirstPayment + cumInterestPaid + amount - rb + interestEarnedAfterLastPayment;
 

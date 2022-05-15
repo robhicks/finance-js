@@ -1,6 +1,6 @@
 import {expectedLoanProceeds} from './expectedLoanProceeds.js';
 
-describe.only('expectedLoanProceeds()', () => {
+describe('expectedLoanProceeds()', () => {
   it('description', () => {
     const props = {
       amount: 1000,
@@ -10,6 +10,6 @@ describe.only('expectedLoanProceeds()', () => {
       payment: 100
     };
     const e = expectedLoanProceeds(props);
-    console.log(`e`, e)
+    expect(e).to.equal(96.37973410796371);
   });
 });

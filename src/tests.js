@@ -5,6 +5,7 @@ import '../src/expectedLoanProceeds.spec.js';
 import '../src/firstPaymentDate.spec.js';
 import '../src/interestPayments.spec.js';
 import '../src/monthsBetween.spec.js';
+import '../src/nextPaymentDate.spec.js';
 import '../src/numberOfPayments.spec.js';
 import '../src/pastDueAmount.spec.js';
 import '../src/paymentAmount.spec.js';
