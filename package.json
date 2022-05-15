@@ -1,7 +1,7 @@
 {
-  "name": "finance-js",
-  "description": "Isomorphic Javascript finance functions",
-  "version": "1.0.0",
+  "name": "iso-finance-js",
+  "description": "Financial module for node, angular and Javascript",
+  "version": "0.0.5",
   "author": "Rob Hicks <rob@hixfamily.org>",
   "repository": {
     "type": "git",
