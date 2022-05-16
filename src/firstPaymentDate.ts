@@ -1,4 +1,4 @@
-import { daysBetween } from './daysBetween.js';
+import { daysBetween } from "./daysBetween";
 /*
  firstPaymentDate
  ----------------
@@ -10,7 +10,8 @@ import { daysBetween } from './daysBetween.js';
  * closingDate (required) - the funding or origination date of the loan
  * firstPaymentDay (optional) - desired day of the month for the payment - defaults to the first day
  */
-export function firstPaymentDate(closingDate = new Date(), firstPaymentDay = 1) {
+export function firstPaymentDate(closingDate: date, firstPaymentDay?: number) {
+  const fpd = firstPaymentDay || 1;
   const cd = closingDate.getDate();
   const om = new Date(closingDate);
   om.setMonth(om.getMonth() + 1);
@@ -23,5 +24,4 @@ export function firstPaymentDate(closingDate = new Date(), firstPaymentDay = 1) 
     }
   }
   return om;
-
 }

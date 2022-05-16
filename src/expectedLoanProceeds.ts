@@ -1,8 +1,8 @@
-import { cumulativeExpectedInterestPaid } from './cumulativeExpectedInterestPaid.js';
-import { daysBetween } from './daysBetween.js';
-import { monthsBetween } from './monthsBetween.js';
-import { numberOfPayments } from './numberOfPayments.js';
-import { remainingBalance } from './remainingBalance.js';
+import { cumulativeExpectedInterestPaid } from "./cumulativeExpectedInterestPaid";
+import { daysBetween } from "./daysBetween";
+import { monthsBetween } from "./monthsBetween";
+import { numberOfPayments } from "./numberOfPayments";
+import { remainingBalance } from "./remainingBalance";
 /*
  expectedLoanProceeds
  ------------
@@ -29,24 +29,39 @@ export function expectedLoanProceeds({
   payments = 0,
   payment = 0,
   prepaidInterest = 0,
-  frequency = 'monthly',
+  frequency = "monthly",
   closingDate = new Date(),
   firstPaymentDate = new Date(),
-  determinationDate = new Date()
+  determinationDate = new Date(),
 } = {}) {
-
   const daysBeforeFirstPayment = daysBetween(closingDate, firstPaymentDate);
-  const periodicRate = rate / 100 / (12 * payments / term);
+  const periodicRate = rate / 100 / ((12 * payments) / term);
   const dailyRate = rate / 100 / 365;
-  const interestEarnedBeforeFirstPayment = daysBeforeFirstPayment * amount * dailyRate - prepaidInterest;
+  const interestEarnedBeforeFirstPayment =
+    daysBeforeFirstPayment * amount * dailyRate - prepaidInterest;
   const numberOfMonths = monthsBetween(firstPaymentDate, determinationDate);
-  const numberOfExtraDays = daysBetween(firstPaymentDate, determinationDate) - numberOfMonths * 30;
+  const numberOfExtraDays =
+    daysBetween(firstPaymentDate, determinationDate) - numberOfMonths * 30;
   const np = numberOfPayments(numberOfMonths, frequency);
 
-  const cumInterestPaid = cumulativeExpectedInterestPaid(amount, periodicRate, term);
-  const rb = remainingBalance({ originalAmount: amount, payment, rate: periodicRate, payments: np });
+  const cumInterestPaid = cumulativeExpectedInterestPaid(
+    amount,
+    periodicRate,
+    term
+  );
+  const rb = remainingBalance({
+    originalAmount: amount,
+    payment,
+    rate: periodicRate,
+    payments: np,
+  });
   const interestEarnedAfterLastPayment = numberOfExtraDays * rb * dailyRate;
-  const expectedProceeds = interestEarnedBeforeFirstPayment + cumInterestPaid + amount - rb + interestEarnedAfterLastPayment;
+  const expectedProceeds =
+    interestEarnedBeforeFirstPayment +
+    cumInterestPaid +
+    amount -
+    rb +
+    interestEarnedAfterLastPayment;
 
   return expectedProceeds;
 }

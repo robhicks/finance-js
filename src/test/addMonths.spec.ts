@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import addMonths from "../addMonths";
+import { addMonths } from "../addMonths";
 
 describe("addMonths()", () => {
   it("should add a single month to a date at the end of a year", () => {
@@ -19,7 +19,6 @@ describe("addMonths()", () => {
   it("should work for large periods", () => {
     const date = new Date("January 1, 1977");
     const d = addMonths(date, 120);
-    console.log(`d`, d);
     expect(d.getFullYear()).to.equal(1987);
     expect(d.getMonth()).to.equal(0);
     expect(d.getDate()).to.equal(1);

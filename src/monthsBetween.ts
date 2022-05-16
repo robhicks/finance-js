@@ -1,4 +1,4 @@
-import { daysBetween } from './daysBetween.js';
+import { daysBetween } from "./daysBetween";
 
 export function monthsBetween(startDate, endDate) {
   const days = daysBetween(startDate, endDate);

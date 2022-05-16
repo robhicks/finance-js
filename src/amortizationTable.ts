@@ -1,5 +1,5 @@
-import { addMonths } from './addMonths.js';
-import { numberOfPayments } from './numberOfPayments.js';
+import { addMonths } from "./addMonths";
+import { numberOfPayments } from "./numberOfPayments";
 
 /*
  generateAmortizationTable
@@ -36,14 +36,13 @@ import { numberOfPayments } from './numberOfPayments.js';
 export function addAmorizationTable({
   balloonDate = new Date(),
   firstPaymentDate = new Date(),
-  frequency = 'monthly',
+  frequency = "monthly",
   interestRate = 0,
   loanAmount = 0,
   payment = 0,
   term = 0,
-  type = 0
+  type = 0,
 } = {}) {
-
   const currDate = firstPaymentDate;
   const dateOffset = 1;
   const lastPaymentDate = addMonths(currDate, term + 1);
@@ -54,11 +53,18 @@ export function addAmorizationTable({
   const totalInterest = 0.0;
   let currInterest = 0;
   let currPrinciple = 0;
-  let tempDate, tempDay, balloonPeriod, balloonAmount, startingPrincipal, balance;
+  let tempDate,
+    tempDay,
+    balloonPeriod,
+    balloonAmount,
+    startingPrincipal,
+    balance;
 
   if (balloonDate) {
     if (balloonDate > lastPaymentDate || balloonDate < currDate) {
-      throw new SyntaxError('balloon date must be after first payment date and before last payment date');
+      throw new SyntaxError(
+        "balloon date must be after first payment date and before last payment date"
+      );
     } else {
       tempDate = new Date(firstPaymentDate);
       tempDay = tempDate.getDate();
@@ -66,25 +72,34 @@ export function addAmorizationTable({
       for (let a = 0; a < payments; a++) {
         if (semimonthly) {
           if (a.isOdd()) {
-            tempDate.add('d', dateOffset);
+            tempDate.add("d", dateOffset);
             tempDate.date(tempDay);
           } else {
-            tempDate.add('d', dateOffset);
+            tempDate.add("d", dateOffset);
           }
         } else {
-          tempDate.add('M', dateOffset);
+          tempDate.add("M", dateOffset);
         }
-        balloonPeriod = (!balloonDate.isAfter(tempDate) && !balloonDate.isBefore(tempDate)) ? a : term;
+        balloonPeriod =
+          !balloonDate.isAfter(tempDate) && !balloonDate.isBefore(tempDate)
+            ? a
+            : term;
       }
     }
-    balloonAmount = calculator.BalloonLoan(loanAmount, interestRate, payments, null, balloonPeriod, type).balloonAmount;
+    balloonAmount = calculator.BalloonLoan(
+      loanAmount,
+      interestRate,
+      payments,
+      null,
+      balloonPeriod,
+      type
+    ).balloonAmount;
   }
 
   loan.payments = payments;
   payment = loan.paymentAmount;
   balance = loanAmount;
   startingPrincipal = loanAmount;
-
 
   for (let i = 0; i < payments; i++) {
     currInterest = balance * interestRate;
@@ -103,7 +118,7 @@ export function addAmorizationTable({
       amount: payment,
       principal: currPrinciple,
       interest: currInterest,
-      txDate: currDate.toISOString()
+      txDate: currDate.toISOString(),
     });
 
     startingPrincipal -= currPrinciple;
@@ -112,13 +127,13 @@ export function addAmorizationTable({
 
     if (semimonthly) {
       if (i.isOdd()) {
-        currDate.add('d', dateOffset);
+        currDate.add("d", dateOffset);
         currDate.date(paymentDay);
       } else {
-        currDate.add('d', dateOffset);
+        currDate.add("d", dateOffset);
       }
     } else {
-      currDate.add('M', dateOffset);
+      currDate.add("M", dateOffset);
     }
   }
   loan.amortizationTable = schedule;

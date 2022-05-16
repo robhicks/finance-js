@@ -1,7 +1,7 @@
 {
   "name": "iso-finance-js",
-  "description": "Financial module for node, angular and Javascript",
-  "version": "0.0.5",
+  "description": "Isometric JavaScript finance functions",
+  "version": "1.0.0",
   "author": "Rob Hicks <rob@hixfamily.org>",
   "repository": {
     "type": "git",
@@ -49,19 +49,22 @@
   },
   "type": "module",
   "keywords": [
-    "finance",
-    "money",
-    "amortization",
     "accrued interest",
+    "amortization table",
+    "amortization",
     "amount financed",
-    "months financed",
-    "interest",
-    "present value",
-    "future value",
-    "balloon payment",
     "balloon amount",
+    "balloon payment",
+    "finance",
+    "future value",
+    "interest",
+    "isomorphic",
+    "JavaScript",
+    "money",
+    "months financed",
+    "node js",
     "payments",
-    "amortiation table"
+    "present value"
   ],
   "license": "MIT",
   "bugs": {

@@ -1,4 +1,4 @@
-import { interestPayments } from './interestPayments.js';
+import { interestPayments } from "./interestPayments";
 
 /*
  cumulativeExpectedInterestPaid
@@ -11,13 +11,26 @@ import { interestPayments } from './interestPayments.js';
  * end (optional) - the last period to include
  * type (optional) - whether payments are made at the end of each period (0) or at the start of each period (1)
  */
-export function cumulativeExpectedInterestPaid(amount = 0, rate = 0, periods = 0, start = null, end = null, type = 0) {
+export function cumulativeExpectedInterestPaid(
+  amount = 0,
+  rate = 0,
+  periods = 0,
+  start = null,
+  end = null,
+  type = 0
+) {
   const startPeriod = start || 1;
   const endPeriod = end || periods;
 
-  const presentValueBeforeStart = interestPayments(rate, startPeriod, amount, type) + amount;
+  const presentValueBeforeStart =
+    interestPayments(rate, startPeriod, amount, type) + amount;
 
-  const result = interestPayments(rate, endPeriod - startPeriod, presentValueBeforeStart, type);
+  const result = interestPayments(
+    rate,
+    endPeriod - startPeriod,
+    presentValueBeforeStart,
+    type
+  );
 
   return result;
 }

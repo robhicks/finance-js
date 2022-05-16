@@ -1,8 +1,8 @@
-export { cumulativeExpectedInterestPaid } from './cumulativeExpectedInterestPaid.js';
-export { daysBetween } from './daysBetween.js';
-export { daysInMonth } from './daysInMonth.js';
-export { firstPaymentDate } from './firstPaymentDate.js';
-export { interestPayments } from './interestPayments.js';
-export { numberOfPayments } from './numberOfPayments.js';
-export { pastDueAmount } from './pastDueAmount.js';
-export { presentValueOfLumpSum } from './presentValueOfLumpSum.js';
+export { cumulativeExpectedInterestPaid } from '../cumulativeExpectedInterestPaid';
+export { daysBetween } from '../daysBetween';
+export { daysInMonth } from '../daysInMonth';
+export { firstPaymentDate } from '../firstPaymentDate';
+export { interestPayments } from '../interestPayments';
+export { numberOfPayments } from '../numberOfPayments';
+export { pastDueAmount } from '../pastDueAmount';
+export { presentValueOfLumpSum } from '../presentValueOfLumpSum';
