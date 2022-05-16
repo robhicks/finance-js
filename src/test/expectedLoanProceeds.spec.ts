@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { expectedLoanProceeds } from "../expectedLoanProceeds";
 
 describe("expectedLoanProceeds()", () => {

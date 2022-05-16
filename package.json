@@ -18,7 +18,8 @@
     "build:watch": "rimraf dist && node ./esbuild.config.js -w",
     "check": "tsc -w",
     "del": "rimraf dist",
-    "dev": "run-p check build:watch"
+    "dev": "run-p check build:watch",
+    "test": "mocha dist/test"
   },
   "engines": {
     "node": ">=16.0.0"

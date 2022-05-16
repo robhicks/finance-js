@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { numberOfPayments } from "../numberOfPayments";
 
 describe("numberOfPayments()", () => {

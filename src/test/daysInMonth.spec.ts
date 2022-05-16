@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { daysInMonth } from "../daysInMonth";
 
 describe("daysInMonth()", () => {
