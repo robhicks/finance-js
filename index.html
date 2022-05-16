@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mocha Tests</title>
+    <link rel="stylesheet" href="node_modules/mocha/mocha.css">
+  </head>
+  <body>
+    <div id="mocha"></div>
+    <script src="node_modules/mocha/mocha.js"></script>
+    <script src="node_modules/chai/chai.js"></script>
+    <script src="./node_modules/sinon/pkg/sinon.js"></script>
+    <script>
+      window.expect = chai.expect
+    </script>
+    <script>mocha.setup('bdd')</script>
+    <script src="dist/test/addDays.spec.js" type="module"></script>
+    <script src="dist/test/addMonths.spec.js" type="module"></script>
+    <script src="dist/test/afterDate.spec.js" type="module"></script>
+    <script src="dist/test/amortizationTable.spec.js" type="module"></script>
+    <script src="dist/test/beforeDate.spec.js" type="module"></script>
+    <script src="dist/test/calcLateFees.spec.js" type="module"></script>
+    <script src="dist/test/cumulativeExpectedInterestPaid.spec.js" type="module"></script>
+    <script src="dist/test/daysBetween.spec.js" type="module"></script>
+    <script src="dist/test/daysInMonth.spec.js" type="module"></script>
+    <script src="dist/test/expectedLoanProceeds.spec.js" type="module"></script>
+    <script src="dist/test/firstPaymentDate.spec.js" type="module"></script>
+    <script src="dist/test/getLoanBalance.spec.js" type="module"></script>
+    <script src="dist/test/interestPayments.spec.js" type="module"></script>
+    <script src="dist/test/monthsBetween.spec.js" type="module"></script>
+    <script src="dist/test/nextPaymentDate.spec.js" type="module"></script>
+    <script src="dist/test/numberOfPayments.spec.js" type="module"></script>
+    <script src="dist/test/pastDueAmount.spec.js" type="module"></script>
+    <script src="dist/test/paymentAmount.spec.js" type="module"></script>
+    <script src="dist/test/presentValueOfAnnuity.spec.js" type="module"></script>
+    <script src="dist/test/presentValueOfLumpSum.spec.js" type="module"></script>
+    <script src="dist/test/remainingBalance.spec.js" type="module"></script>
+    <script type="module">
+      const sleep = (milliseconds) => {
+        const date = Date.now()
+        let currentDate = null
+        do {
+          currentDate = Date.now()
+        } while (currentDate - date < milliseconds)
+      }
+      (async() => {
+        await sleep(100)
+        mocha.checkLeaks();
+        mocha.run();
+      })()
+    </script>
+  </body>
+</html>
